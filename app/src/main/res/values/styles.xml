@@ -2,8 +2,8 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Holo.Light.NoActionBar">
         <item name="android:fontFamily">serif</item>
-        <item name="android:windowBackground">#f3efe5</item>
-        <item name="android:colorBackground">#f3efe5</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="android:colorBackground">#FFFFFF</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowAnimationStyle">@null</item>
         <item name="android:windowDisablePreview">true</item>

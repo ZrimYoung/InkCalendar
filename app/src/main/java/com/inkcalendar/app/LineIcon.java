@@ -15,7 +15,7 @@ final class LineIcon extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     LineIcon(int kind, float density) {
         this.kind = kind; this.size = (int) (24 * density + 0.5f);
-        paint.setColor(0xff191916); paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(Color.BLACK); paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1.6f); paint.setStrokeCap(Paint.Cap.ROUND); paint.setStrokeJoin(Paint.Join.ROUND);
     }
     @Override public void draw(Canvas canvas) {
@@ -44,7 +44,7 @@ final class LineIcon extends Drawable {
     @Override protected boolean onStateChange(int[] state) {
         boolean pressed = false;
         for (int value : state) if (value == android.R.attr.state_pressed) pressed = true;
-        int color = pressed ? 0xfff3efe5 : 0xff191916;
+        int color = pressed ? Color.WHITE : Color.BLACK;
         if (paint.getColor() == color) return false;
         paint.setColor(color); invalidateSelf(); return true;
     }

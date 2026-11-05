@@ -1,7 +1,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400&family=Noto+Serif+SC:wght@400;600;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,650;8..60,900&display=swap">
 <style>
 #ink-calendar-preview .ink-stage { min-height: 1020px; display: flex; align-items: flex-start; justify-content: center; padding: 20px 0; box-sizing: border-box; }
-#ink-calendar-preview .ink-app { --ink-paper: #f3efe5; --ink-text: #191916; --ink-muted: #494843; --ink-rule: #9b978e; --ink-accent: #a3231d; --ink-size: 1; --ink-font: "Source Serif 4", "Noto Serif SC", "Songti SC", Georgia, serif; --ink-reading: "EB Garamond", "Noto Serif SC", "Songti SC", Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 16px 18px 22px; border: 1px solid var(--ink-rule); font-family: var(--ink-font); font-size: 20px; line-height: 1.3; color-scheme: light; }
+#ink-calendar-preview .ink-app { --ink-paper: #fff; --ink-text: #000; --ink-muted: #000; --ink-rule: #000; --ink-accent: #000; --ink-size: 1; --ink-font: "Source Serif 4", "Noto Serif SC", "Songti SC", Georgia, serif; --ink-reading: "EB Garamond", "Noto Serif SC", "Songti SC", Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 16px 18px 22px; border: 1px solid var(--ink-rule); font-family: var(--ink-font); font-size: 20px; line-height: 1.3; color-scheme: light; }
 #ink-calendar-preview .ink-app * { box-sizing: border-box; transition: none; animation: none; }
 #ink-calendar-preview .ink-app button { color: var(--ink-text); background: var(--ink-paper); font-family: inherit; border-radius: 0; box-shadow: none; font-weight: 400; letter-spacing: normal; text-transform: none; }
 #ink-calendar-preview .ink-app button:active { background: var(--ink-text); color: var(--ink-paper); }
@@ -16,12 +16,13 @@
 #ink-calendar-preview .ink-year { font-size: calc(16px * var(--ink-size)); font-weight: 400; color: var(--ink-muted); }
 #ink-calendar-preview .ink-weekday { font-size: calc(21px * var(--ink-size)); }
 #ink-calendar-preview .ink-month-nav { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; gap: 6px; }
+#ink-calendar-preview .ink-calendar { touch-action: pan-y; user-select: none; }
 #ink-calendar-preview .ink-month-title { text-align: center; font-size: calc(20px * var(--ink-size)); font-weight: 650; line-height: 1.2; }
 #ink-calendar-preview .ink-weekdays, #ink-calendar-preview .ink-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 #ink-calendar-preview .ink-weekdays span { text-align: center; display: grid; place-items: center; min-height: 36px; font-size: calc(12px * var(--ink-size)); font-weight: 650; color: var(--ink-muted); letter-spacing: .09em; }
 #ink-calendar-preview .ink-day { position: relative; border: 2px solid transparent; border-bottom: 1px solid var(--ink-rule); min-width: 0; height: calc(53px * var(--ink-size)); margin: 0; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: calc(22px * var(--ink-size)); line-height: 1.1; }
 #ink-calendar-preview .ink-day .ink-dot { height: 14px; line-height: 14px; font-size: 16px; }
-#ink-calendar-preview .ink-day.ink-other { color: var(--ink-muted); }
+#ink-calendar-preview .ink-day.ink-other { color: var(--ink-muted); font-size: calc(18px * var(--ink-size)); }
 #ink-calendar-preview .ink-day.ink-today { border: 2px solid var(--ink-text); font-weight: 900; }
 #ink-calendar-preview .ink-day.ink-selected { background: var(--ink-text); color: var(--ink-paper); border-color: var(--ink-text); }
 #ink-calendar-preview .ink-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 0; }
@@ -40,7 +41,7 @@
 #ink-calendar-preview .ink-landscape .ink-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 0; }
 #ink-calendar-preview .ink-landscape .ink-number { font-size: calc(104px * var(--ink-size)); }
 #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 10px; }
-#ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; background: rgb(0 0 0 / 25%); display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
+#ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
 #ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid var(--ink-text); background: var(--ink-paper); color: var(--ink-text); padding: 18px; }
 #ink-calendar-preview .ink-dialog h3 { font: 900 26px/1.2 var(--ink-font); border-bottom: 4px solid var(--ink-text); padding-bottom: 12px; margin: 0 0 16px; }
 #ink-calendar-preview .ink-dialog label { display: block; font-size: 16px; margin-bottom: 12px; }
@@ -109,6 +110,36 @@
     const state = { selected: validKey(previous.selected) ? previous.selected : today, month: validKey(previous.month) ? monthOf(previous.month) : monthOf(today), large: previous.large === true, awake: true, full: true };
     const events = examples.map(item => ({...item}));
     const isWide = name === 'landscape';
+    let swipe = null, lastSwipeAt = -1000;
+    function moveMonth(by) {
+      const next = dateOf(state.month); next.setUTCMonth(next.getUTCMonth() + by);
+      if (next.getUTCFullYear() < 1900 || next.getUTCFullYear() > 2100) return;
+      state.month = keyOf(next); state.selected = monthOf(today) === state.month ? today : state.month;
+      render(); persist();
+    }
+    app.addEventListener('pointerdown', e => {
+      const calendar = e.target.closest('.ink-calendar');
+      if (!e.isPrimary || e.button !== 0 || !calendar) { swipe = null; return; }
+      swipe = {x:e.clientX, y:e.clientY, id:e.pointerId, calendar};
+    });
+    app.addEventListener('pointermove', e => {
+      if (!swipe || swipe.id !== e.pointerId) return;
+      const dx = Math.abs(e.clientX - swipe.x), dy = Math.abs(e.clientY - swipe.y);
+      if (dy > 8 && dy >= dx) { swipe = null; return; }
+      if (dx > 8 && dx > dy * 1.5) swipe.calendar.setPointerCapture(e.pointerId);
+    });
+    app.addEventListener('pointercancel', () => { swipe = null; });
+    app.addEventListener('pointerup', e => {
+      if (!swipe || swipe.id !== e.pointerId) return;
+      const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) >= 48 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        lastSwipeAt = performance.now(); moveMonth(dx < 0 ? 1 : -1);
+      }
+    });
+    app.addEventListener('click', e => {
+      if (performance.now() - lastSwipeAt < 400) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
     const icon = (action, glyph, title) => '<button type="button" class="ink-icon cursor-interaction" data-action="' + action + '" aria-label="' + title + '" data-tooltip="' + title + '"><i data-lucide="' + glyph + '" aria-hidden="true"></i></button>';
     function render() {
       const focused = app.contains(document.activeElement) ? document.activeElement : null;
@@ -195,9 +226,7 @@
       if (button.dataset.event) editEvent(events.find(event => String(event.id) === button.dataset.event));
       const action = button.dataset.action;
       if (action === 'prev' || action === 'next') {
-        const next = dateOf(state.month); next.setUTCMonth(next.getUTCMonth() + (action === 'next' ? 1 : -1));
-        if (next.getUTCFullYear() < 1900 || next.getUTCFullYear() > 2100) return;
-        state.month = keyOf(next); state.selected = monthOf(today) === state.month ? today : state.month; render(); persist();
+        moveMonth(action === 'next' ? 1 : -1);
       }
       if (action === 'today') { state.selected = today; state.month = monthOf(today); render(); persist(); }
       if (action === 'add') editEvent(null);

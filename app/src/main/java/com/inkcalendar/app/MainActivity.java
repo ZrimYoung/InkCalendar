@@ -3,6 +3,7 @@ package com.inkcalendar.app;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +28,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -45,8 +47,8 @@ import java.util.TimeZone;
 import java.text.SimpleDateFormat;
 
 public final class MainActivity extends Activity {
-    private static final int PAPER = 0xfff3efe5, INK = 0xff191916,
-        SECONDARY = 0xff494843, RULE = 0xff9b978e, ACCENT = 0xffa3231d;
+    private static final int PAPER = Color.WHITE, INK = Color.BLACK,
+        SECONDARY = Color.BLACK, RULE = Color.BLACK, ACCENT = Color.BLACK;
     private EventStore store;
     private SharedPreferences preferences;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -59,6 +61,7 @@ public final class MainActivity extends Activity {
     private Locale displayLocale;
     private boolean registered;
     private AlertDialog editor;
+    private Dialog settingsDialog;
     private EditText titleInput, timeInput;
     private String editingDate;
     private long editingId;
@@ -109,6 +112,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         if (editor != null) editor.dismiss();
+        if (settingsDialog != null) settingsDialog.dismiss();
         store.close(); super.onDestroy();
     }
     @Override protected void onSaveInstanceState(Bundle out) {
@@ -215,7 +219,7 @@ public final class MainActivity extends Activity {
             hero.addView(words, weight()); identity.addView(hero);
             layout.addView(identity);
         }
-        LinearLayout calendarPanel = column();
+        LinearLayout calendarPanel = new MonthSwipeLayout(this, this::moveMonth);
         if (wide) {
             calendarPanel.setPadding(dp(12), 0, 0, 0);
             layout.addView(calendarPanel, new LinearLayout.LayoutParams(0, -2, 0.68f));
@@ -274,6 +278,7 @@ public final class MainActivity extends Activity {
                     cell.setText(contents);
                     cell.setGravity(Gravity.CENTER); cell.setIncludeFontPadding(false);
                     boolean inMonth = Dates.month(date).equals(displayedMonth);
+                    if (!inMonth) cell.setTextSize(18 * textScale);
                     boolean valid = date.compareTo("1900-01-01") >= 0 && date.compareTo("2100-12-31") <= 0;
                     int base = date.equals(selected) ? INK : PAPER;
                     cell.setTextColor(interactiveText(base, inMonth ? INK : SECONDARY));
@@ -385,7 +390,14 @@ public final class MainActivity extends Activity {
         editor.show(); styleDialog(editor);
     }
     private void showSettings() {
-        LinearLayout form = column(); form.setPadding(dp(20), dp(8), dp(20), dp(8));
+        settingsDialog = new Dialog(this);
+        settingsDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20));
+        form.setBackgroundColor(PAPER);
+        TextView heading = text(getString(R.string.settings), 26, true);
+        form.addView(heading);
+        LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(4));
+        divider.setMargins(0, dp(12), 0, dp(12)); form.addView(rule(INK), divider);
         CheckBox awake = check(getString(R.string.keep_awake), preferences.getBoolean("awake", true));
         CheckBox full = check(getString(R.string.full_screen), preferences.getBoolean("full", true));
         CheckBox large = check(getString(R.string.large_text), preferences.getBoolean("large", false));
@@ -395,21 +407,48 @@ public final class MainActivity extends Activity {
         RadioGroup languages = new RadioGroup(this);
         RadioButton chinese = new RadioButton(this); chinese.setId(View.generateViewId()); chinese.setText("简体中文"); chinese.setMinHeight(dp(48));
         RadioButton english = new RadioButton(this); english.setId(View.generateViewId()); english.setText("English"); english.setMinHeight(dp(48));
+        styleChoice(chinese, true); styleChoice(english, true);
         languages.addView(chinese); languages.addView(english);
         languages.check(displayLocale.equals(Locale.US) ? english.getId() : chinese.getId()); form.addView(languages);
         TextView note = text(getString(R.string.settings_note), 14, false);
         note.setPadding(0, dp(12), 0, 0); note.setLineSpacing(dp(5), 1); form.addView(note);
-        ScrollView scroll = new ScrollView(this); scroll.addView(form);
-        AlertDialog settings = new AlertDialog.Builder(this).setTitle(R.string.settings).setView(scroll).setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.save, (dialog, which) -> {
+        LinearLayout actions = row(); actions.setPadding(0, dp(20), 0, 0);
+        actions.addView(button(getString(R.string.cancel), () -> settingsDialog.dismiss()), weight());
+        LinearLayout.LayoutParams saveBounds = weight(); saveBounds.leftMargin = dp(12);
+        actions.addView(button(getString(R.string.save), () -> {
                 preferences.edit().putBoolean("awake", awake.isChecked()).putBoolean("full", full.isChecked()).putBoolean("large", large.isChecked())
                     .putString("language", languages.getCheckedRadioButtonId() == english.getId() ? "en" : "zh").apply();
+                settingsDialog.dismiss();
                 applyLanguage(); buildScreen(); applyDisplay();
-            }).create();
-        settings.show(); styleDialog(settings);
+            }), saveBounds);
+        form.addView(actions);
+        ScrollView scroll = new ScrollView(this); scroll.setOverScrollMode(View.OVER_SCROLL_NEVER); scroll.addView(form);
+        settingsDialog.setContentView(scroll);
+        Window window = settingsDialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(shape(PAPER, 1));
+            window.setWindowAnimations(0); window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        }
+        settingsDialog.show();
+        if (window != null) {
+            int width = Math.min(getResources().getDisplayMetrics().widthPixels - dp(32), dp(420));
+            form.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            int height = Math.min(form.getMeasuredHeight(), (int) (getResources().getDisplayMetrics().heightPixels * 0.85f));
+            window.setLayout(width, height);
+        }
     }
     private CheckBox check(String title, boolean checked) {
-        CheckBox box = new CheckBox(this); box.setText(title); box.setTextColor(Color.BLACK); box.setTextSize(18); box.setMinHeight(dp(48)); box.setChecked(checked); return box;
+        CheckBox box = new CheckBox(this); box.setText(title); box.setMinHeight(dp(48));
+        styleChoice(box, false); box.setChecked(checked); return box;
+    }
+    private void styleChoice(android.widget.CompoundButton choice, boolean radio) {
+        choice.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density, radio));
+        choice.setTextColor(INK); choice.setTextSize(18 * textScale);
+        choice.setTypeface(fontFor(choice.getText(), display));
+        StateListDrawable states = new StateListDrawable();
+        states.addState(new int[]{android.R.attr.state_focused}, shape(PAPER, 2));
+        states.addState(new int[]{}, shape(PAPER, 0));
+        choice.setBackground(states);
     }
     private LinearLayout column() { LinearLayout v = new LinearLayout(this); v.setOrientation(LinearLayout.VERTICAL); return v; }
     private LinearLayout row() { LinearLayout v = new LinearLayout(this); v.setOrientation(LinearLayout.HORIZONTAL); v.setGravity(Gravity.CENTER_VERTICAL); return v; }
