@@ -426,16 +426,15 @@ public final class MainActivity extends Activity {
         settingsDialog.setContentView(scroll);
         Window window = settingsDialog.getWindow();
         if (window != null) {
-            window.setBackgroundDrawable(shape(PAPER, 1));
+            window.setBackgroundDrawable(shape(PAPER, 0));
             window.setWindowAnimations(0); window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            if (preferences.getBoolean("full", true)) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN);
+            }
         }
         settingsDialog.show();
-        if (window != null) {
-            int width = Math.min(getResources().getDisplayMetrics().widthPixels - dp(32), dp(420));
-            form.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-            int height = Math.min(form.getMeasuredHeight(), (int) (getResources().getDisplayMetrics().heightPixels * 0.85f));
-            window.setLayout(width, height);
-        }
+        if (window != null) window.setLayout(-1, -1);
     }
     private CheckBox check(String title, boolean checked) {
         CheckBox box = new CheckBox(this); box.setText(title); box.setMinHeight(dp(48));
@@ -449,6 +448,7 @@ public final class MainActivity extends Activity {
         states.addState(new int[]{android.R.attr.state_focused}, shape(PAPER, 2));
         states.addState(new int[]{}, shape(PAPER, 0));
         choice.setBackground(states);
+        choice.setMinHeight(dp(48)); choice.setMinimumHeight(dp(48));
     }
     private LinearLayout column() { LinearLayout v = new LinearLayout(this); v.setOrientation(LinearLayout.VERTICAL); return v; }
     private LinearLayout row() { LinearLayout v = new LinearLayout(this); v.setOrientation(LinearLayout.HORIZONTAL); v.setGravity(Gravity.CENTER_VERTICAL); return v; }

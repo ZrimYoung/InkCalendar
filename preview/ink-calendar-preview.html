@@ -43,6 +43,9 @@
 #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 10px; }
 #ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
 #ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid var(--ink-text); background: var(--ink-paper); color: var(--ink-text); padding: 18px; }
+#ink-calendar-preview .ink-shade.ink-settings { background: var(--ink-paper); padding: 20px 18px; }
+#ink-calendar-preview .ink-settings .ink-dialog { width: 100%; border: 0; padding: 0; }
+#ink-calendar-preview .ink-settings .ink-check { min-height: 48px; }
 #ink-calendar-preview .ink-dialog h3 { font: 900 26px/1.2 var(--ink-font); border-bottom: 4px solid var(--ink-text); padding-bottom: 12px; margin: 0 0 16px; }
 #ink-calendar-preview .ink-dialog label { display: block; font-size: 16px; margin-bottom: 12px; }
 #ink-calendar-preview .ink-dialog input:not([type=checkbox]), #ink-calendar-preview .ink-dialog textarea, #ink-calendar-preview .ink-dialog select { font: 16px/1.5 var(--ink-font); color: var(--ink-text); background: var(--ink-paper); border: 1px solid var(--ink-text); border-radius: 0; padding: 8px; width: 100%; min-width: 0; display: block; margin-top: 5px; }
@@ -213,6 +216,7 @@
     }
     function settings() {
       const shade = openDialog('<h3>' + t('设置','Settings') + '</h3><label class="ink-check"><input type="checkbox" data-field="awake" ' + (state.awake ? 'checked' : '') + '>' + t('保持屏幕唤醒','Keep screen awake') + '</label><label class="ink-check"><input type="checkbox" data-field="full" ' + (state.full ? 'checked' : '') + '>' + t('全屏展示','Full screen') + '</label><label class="ink-check"><input type="checkbox" data-field="large" ' + (state.large ? 'checked' : '') + '>' + t('加大文字','Larger text') + '</label><label>' + t('语言 / Language','Language / 语言') + '<select data-field="language"><option value="zh" ' + (language === 'zh' ? 'selected' : '') + '>简体中文</option><option value="en" ' + (language === 'en' ? 'selected' : '') + '>English</option></select></label><div class="ink-note">' + t('应用打开时保持唤醒。<br>事项仅保存在本机。','Stays awake while this app is open.<br>Events are stored on this device.') + '</div><div class="ink-dialog-actions"><button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-save>' + t('保存','Save') + '</button></div>', t('设置','Settings'));
+      shade.classList.add('ink-settings');
       shade.querySelector('[data-save]').addEventListener('click', () => {
         for (const field of ['awake', 'full', 'large']) state[field] = shade.querySelector('[data-field="' + field + '"]').checked;
         language = shade.querySelector('[data-field="language"]').value;
