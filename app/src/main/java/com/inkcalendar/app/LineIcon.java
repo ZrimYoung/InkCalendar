@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable;
 
 /** Small line icons drawn without vector drawable or font-glyph dependencies. */
 final class LineIcon extends Drawable {
-    static final int PREVIOUS = 0, NEXT = 1, TODAY = 2, ADD = 3, SETTINGS = 4, DELETE = 5;
+    static final int PREVIOUS = 0, NEXT = 1, TODAY = 2, ADD = 3, SETTINGS = 4, DELETE = 5, LIST = 6, MILESTONE = 7;
     private final int kind, size;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     LineIcon(int kind, float density) {
@@ -31,6 +31,10 @@ final class LineIcon extends Drawable {
             canvas.drawRoundRect(new RectF(4, 5, 20, 21), 2, 2, paint);
             canvas.drawLine(8, 3, 8, 7, paint); canvas.drawLine(16, 3, 16, 7, paint);
             canvas.drawLine(4, 10, 20, 10, paint); canvas.drawCircle(12, 15.5f, 2, paint);
+        } else if (kind == LIST) {
+            for(int y=6;y<=18;y+=6) {canvas.drawCircle(5,y,1,paint);canvas.drawLine(10,y,20,y,paint);}
+        } else if (kind == MILESTONE) {
+            canvas.drawRect(6,3,18,21,paint);canvas.drawLine(6,14,12,10,paint);canvas.drawLine(12,10,18,14,paint);
         } else if (kind == DELETE) {
             canvas.drawLine(4, 6, 20, 6, paint); canvas.drawLine(9, 3, 15, 3, paint);
             canvas.drawLine(6, 6, 7, 21, paint); canvas.drawLine(7, 21, 17, 21, paint); canvas.drawLine(17, 21, 18, 6, paint);

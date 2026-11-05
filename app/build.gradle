@@ -7,13 +7,23 @@ android {
         applicationId 'com.inkcalendar.app'
         minSdk 19
         targetSdk 35
-        versionCode 7
-        versionName '0.3.4'
+        versionCode 8
+        versionName '0.4.0'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    bundle { language { enableSplit = false } }
+    testOptions { unitTests.includeAndroidResources = true
+        unitTests.all {
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            systemProperty 'maven.repo.local', new File(gradle.gradleUserHomeDir, 'robolectric').absolutePath
+        }
+    }
     lint { abortOnError true }
 }
-dependencies { testImplementation 'junit:junit:4.13.2' }
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.11.1'
+}

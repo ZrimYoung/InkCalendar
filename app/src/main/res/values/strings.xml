@@ -38,4 +38,40 @@
     <string name="large_text">Larger text</string>
     <string name="language">Language / 语言</string>
     <string name="settings_note">Stays awake while this app is open.\nEvents are stored on this device.</string>
+    <string name="show_lunar">Lunar dates (Chinese only)</string>
+    <string name="show_terms">Solar terms (Chinese only)</string>
+    <string name="show_holidays">Holidays and workdays</string>
+    <string name="holiday_note">China holidays; official days off and make-up workdays are included for 2026. Other years show festival names only. Schedule updates come with app updates.</string>
+    <string name="holiday_unknown">Workday schedule unavailable for this year</string>
+    <string name="hide_completed">Hide completed events</string>
+    <string name="completed">Completed</string>
+    <string name="mark_complete">Mark complete</string>
+    <string name="mark_incomplete">Mark incomplete</string>
+    <string name="future_events">Future events</string>
+    <string name="next_7">7 days</string>
+    <string name="next_30">30 days</string>
+    <string name="empty_range">No events in this range</string>
+    <string name="close">Back</string>
+    <string name="jump_date">Jump to date</string>
+    <string name="display_mode">Desk display mode</string>
+    <string name="display_note">Shows today, pinned milestones and up to three upcoming unfinished events. Turn off in Settings to return to the month calendar.</string>
+    <string name="milestones">Milestones</string>
+    <string name="add_milestone">Add milestone</string>
+    <string name="edit_milestone">Edit milestone</string>
+    <string name="milestone_name">Name</string>
+    <string name="milestone_type">Type</string>
+    <string name="anniversary">Anniversary</string>
+    <string name="countdown">Countdown</string>
+    <string name="lunar_anniversary">Use lunar anniversary</string>
+    <string name="milestone_note">Anniversaries retain their original date and count each year; countdowns have one target date. February 29 uses February 28 in non-leap years. Lunar anniversaries use the regular month if the leap month is absent, and day 29 if day 30 is absent.</string>
+    <string name="pin_home">Pin to home (up to two)</string>
+    <string name="pin_limit">You can pin up to two milestones. Unpin another one first.</string>
+    <string name="empty_milestones">No milestones yet</string>
+    <string name="delete_milestone">Delete this milestone?</string>
+    <string name="anniversary_years">Year %1$d · %2$s</string>
+    <string name="anchor_date">Original date: %1$s</string>
+    <string name="outside_range">Next date is outside the supported range</string>
+    <plurals name="days_until"><item quantity="one">%1$d day to go</item><item quantity="other">%1$d days to go</item></plurals>
+    <plurals name="days_since"><item quantity="one">%1$d day since</item><item quantity="other">%1$d days since</item></plurals>
+    <string name="date_range">%1$s — %2$s</string>
 </resources>

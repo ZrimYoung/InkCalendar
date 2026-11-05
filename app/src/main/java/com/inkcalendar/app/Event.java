@@ -2,8 +2,13 @@ package com.inkcalendar.app;
 
 final class Event {
     final long id;
+    final boolean completed;
     final String date, title, time;
     Event(long id, String date, String title, String time) {
+        this(id, date, title, time, false);
+    }
+    Event(long id, String date, String title, String time, boolean completed) {
+        this.completed = completed;
         Dates.parse(date);
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("title_required");
         if (title.trim().length() > 120) throw new IllegalArgumentException("title_too_long");
