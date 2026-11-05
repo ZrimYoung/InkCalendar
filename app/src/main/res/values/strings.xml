@@ -6,6 +6,7 @@
     <string name="next_month">Next month</string>
     <string name="today">Today</string>
     <string name="go_today">Back to today</string>
+    <string name="already_today">Already on today</string>
     <string name="add_event">Add event</string>
     <string name="edit_event">Edit event</string>
     <string name="selected">Selected</string>

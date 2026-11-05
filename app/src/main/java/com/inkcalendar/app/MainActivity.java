@@ -160,11 +160,23 @@ public final class MainActivity extends Activity {
         getResources().updateConfiguration(configuration, getResources().getDisplayMetrics());
     }
     private String formatDate(String date, String pattern) {
-        SimpleDateFormat format = new SimpleDateFormat(pattern, displayLocale);
+        return formatDate(date, pattern, displayLocale);
+    }
+    private String formatDate(String date, String pattern, Locale locale) {
+        SimpleDateFormat format = new SimpleDateFormat(pattern, locale);
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         return format.format(Dates.parse(date).getTime());
     }
     private String monthLabel(String date) { return formatDate(date, displayLocale.equals(Locale.US) ? "MMMM yyyy" : "yyyy 年 M 月"); }
+    private Locale alternateLocale() { return displayLocale.equals(Locale.US) ? Locale.SIMPLIFIED_CHINESE : Locale.US; }
+    private String alternateString(int id) {
+        Configuration config = new Configuration(getResources().getConfiguration()); config.setLocale(alternateLocale());
+        return createConfigurationContext(config).getString(id);
+    }
+    private String alternateMonth(String date) {
+        Locale locale = alternateLocale();
+        return formatDate(date, locale.equals(Locale.US) ? "MMMM yyyy" : "yyyy 年 M 月", locale);
+    }
     private String shortDate(String date) { return formatDate(date, displayLocale.equals(Locale.US) ? "MMM d" : "M月d日"); }
 
     private void buildScreen() {
@@ -184,10 +196,15 @@ public final class MainActivity extends Activity {
             scroll.requestApplyInsets();
         }
         LinearLayout top = row();
-        TextView brand = text(getString(R.string.app_name), 30, true);
+        TextView brand = label(R.string.app_name, 30, true);
         brand.setTypeface(fontFor(brand.getText(), headline), Typeface.BOLD);
+        ((StableTextView) brand).reserveFor(alternateString(R.string.app_name), fontFor(alternateString(R.string.app_name), headline));
         top.addView(brand, weight());
         top.addView(icon(LineIcon.TODAY, R.string.go_today, () -> {
+            if (selected.equals(Dates.today()) && displayedMonth.equals(Dates.month(Dates.today()))) {
+                Toast.makeText(this, R.string.already_today, Toast.LENGTH_SHORT).show();
+                return;
+            }
             selected = Dates.today(); today = selected; displayedMonth = Dates.month(selected); render();
         }));
         top.addView(icon(LineIcon.SETTINGS, R.string.settings, this::showSettings));
@@ -204,7 +221,7 @@ public final class MainActivity extends Activity {
         dayNumber = text("", wide ? 104 : 84, false);
         dayNumber.setTypeface(headline);
         dayNumber.setIncludeFontPadding(false);
-        dateTitle = text("", 16, false); dayTitle = text("", 21, false);
+        dateTitle = stableText("", 16, false); dayTitle = stableText("", 21, false);
         dateTitle.setTextColor(SECONDARY);
         if (wide) {
             identity.setPadding(0, dp(8), dp(12), 0);
@@ -228,7 +245,7 @@ public final class MainActivity extends Activity {
         LinearLayout nav = row();
         previous = icon(LineIcon.PREVIOUS, R.string.previous_month, () -> moveMonth(-1));
         next = icon(LineIcon.NEXT, R.string.next_month, () -> moveMonth(1));
-        monthTitle = text("", 20, true); monthTitle.setGravity(Gravity.CENTER);
+        monthTitle = stableText("", 20, true); monthTitle.setGravity(Gravity.CENTER);
         nav.addView(previous, new LinearLayout.LayoutParams(dp(48), dp(48)));
         nav.addView(monthTitle, weight());
         nav.addView(next, new LinearLayout.LayoutParams(dp(48), dp(48)));
@@ -253,8 +270,12 @@ public final class MainActivity extends Activity {
         if (monthGrid == null) return;
         dayNumber.setText(String.format(Locale.US, "%02d", Integer.parseInt(today.substring(8))));
         dateTitle.setText(monthLabel(today));
+        ((StableTextView) dateTitle).reserveFor(alternateMonth(today), fontFor(alternateMonth(today), display));
         dayTitle.setText(formatDate(today, "EEEE"));
+        String alternateDay = formatDate(today, "EEEE", alternateLocale());
+        ((StableTextView) dayTitle).reserveFor(alternateDay, fontFor(alternateDay, display));
         monthTitle.setText(monthLabel(displayedMonth));
+        ((StableTextView) monthTitle).reserveFor(alternateMonth(displayedMonth), fontFor(alternateMonth(displayedMonth), labelFont));
         previous.setEnabled(!displayedMonth.equals("1900-01-01")); next.setEnabled(!displayedMonth.equals("2100-12-01"));
         monthGrid.removeAllViews(); agenda.removeAllViews();
         try {
@@ -306,7 +327,10 @@ public final class MainActivity extends Activity {
             }
             boolean upcoming = selected.equals(today);
             LinearLayout agendaHeader = row();
-            TextView title = text(upcoming ? getString(R.string.upcoming).toUpperCase(displayLocale) : shortDate(selected), 14, true);
+            TextView title = stableText(upcoming ? getString(R.string.upcoming).toUpperCase(displayLocale) : shortDate(selected), 14, true);
+            String alternateHeading = upcoming ? alternateString(R.string.upcoming).toUpperCase(alternateLocale())
+                : formatDate(selected, alternateLocale().equals(Locale.US) ? "MMM d" : "M月d日", alternateLocale());
+            ((StableTextView) title).reserveFor(alternateHeading, fontFor(alternateHeading, labelFont));
             title.setTextColor(ACCENT);
             if (Build.VERSION.SDK_INT >= 21) title.setLetterSpacing(0.09f);
             agendaHeader.addView(title, weight());
@@ -314,7 +338,7 @@ public final class MainActivity extends Activity {
             agenda.addView(agendaHeader);
             List<Event> events = store.between(selected, upcoming ? Dates.addDays(selected, 6) : selected);
             if (events.isEmpty()) {
-                TextView empty = text(getString(upcoming ? R.string.empty_upcoming : R.string.empty_day), 16, false);
+                TextView empty = label(upcoming ? R.string.empty_upcoming : R.string.empty_day, 16, false);
                 empty.setLineSpacing(dp(6), 1); agenda.addView(empty);
             }
             for (Event event : events) {
@@ -394,7 +418,7 @@ public final class MainActivity extends Activity {
         settingsDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20));
         form.setBackgroundColor(PAPER);
-        TextView heading = text(getString(R.string.settings), 26, true);
+        TextView heading = label(R.string.settings, 26, true);
         form.addView(heading);
         LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(4));
         divider.setMargins(0, dp(12), 0, dp(12)); form.addView(rule(INK), divider);
@@ -402,7 +426,7 @@ public final class MainActivity extends Activity {
         CheckBox full = check(getString(R.string.full_screen), preferences.getBoolean("full", true));
         CheckBox large = check(getString(R.string.large_text), preferences.getBoolean("large", false));
         form.addView(awake); form.addView(full); form.addView(large);
-        TextView languageTitle = text(getString(R.string.language), 16, false);
+        TextView languageTitle = label(R.string.language, 16, false);
         languageTitle.setPadding(0, dp(16), 0, dp(8)); form.addView(languageTitle);
         RadioGroup languages = new RadioGroup(this);
         RadioButton chinese = new RadioButton(this); chinese.setId(View.generateViewId()); chinese.setText("简体中文"); chinese.setMinHeight(dp(48));
@@ -410,7 +434,7 @@ public final class MainActivity extends Activity {
         styleChoice(chinese, true); styleChoice(english, true);
         languages.addView(chinese); languages.addView(english);
         languages.check(displayLocale.equals(Locale.US) ? english.getId() : chinese.getId()); form.addView(languages);
-        TextView note = text(getString(R.string.settings_note), 14, false);
+        TextView note = label(R.string.settings_note, 14, false);
         note.setPadding(0, dp(12), 0, 0); note.setLineSpacing(dp(5), 1); form.addView(note);
         LinearLayout actions = row(); actions.setPadding(0, dp(20), 0, 0);
         actions.addView(button(getString(R.string.cancel), () -> settingsDialog.dismiss()), weight());
@@ -444,6 +468,8 @@ public final class MainActivity extends Activity {
         choice.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density, radio));
         choice.setTextColor(INK); choice.setTextSize(18 * textScale);
         choice.setTypeface(fontFor(choice.getText(), display));
+        choice.setIncludeFontPadding(false);
+        choice.setText(StableTextView.uniformLines(choice.getText(), choice));
         StateListDrawable states = new StateListDrawable();
         states.addState(new int[]{android.R.attr.state_focused}, shape(PAPER, 2));
         states.addState(new int[]{}, shape(PAPER, 0));
@@ -458,9 +484,23 @@ public final class MainActivity extends Activity {
         Typeface face = fontFor(value.isEmpty() ? (displayLocale.equals(Locale.US) ? "A" : "中") : value, bold ? labelFont : display);
         view.setTypeface(face, face == serif && bold ? Typeface.BOLD : Typeface.NORMAL); return view;
     }
+    private StableTextView stableText(String value, int size, boolean bold) {
+        StableTextView view = new StableTextView(this);
+        view.setTextSize(size * textScale); view.setTextColor(INK); view.setGravity(Gravity.CENTER_VERTICAL);
+        Typeface face = fontFor(value.isEmpty() ? (displayLocale.equals(Locale.US) ? "A" : "中") : value, bold ? labelFont : display);
+        view.setTypeface(face, face == serif && bold ? Typeface.BOLD : Typeface.NORMAL);
+        view.setText(value); return view;
+    }
+    private StableTextView label(int id, int size, boolean bold) {
+        StableTextView view = stableText(getString(id), size, bold);
+        String alternate = alternateString(id);
+        view.reserveFor(alternate, fontFor(alternate, bold ? labelFont : display));
+        return view;
+    }
     private Button button(String value, Runnable action) {
         Button b = new Button(this); b.setText(value); b.setTextColor(Color.BLACK); b.setTextSize(16 * textScale);
         b.setTypeface(fontFor(value, display));
+        b.setIncludeFontPadding(false); b.setText(StableTextView.uniformLines(value, b));
         b.setTextColor(interactiveText(PAPER, INK));
         b.setAllCaps(false); b.setMinimumWidth(dp(48)); b.setMinWidth(dp(48)); b.setMinimumHeight(dp(48)); b.setMinHeight(dp(48));
         b.setPadding(dp(10), dp(4), dp(10), dp(4)); b.setBackground(background(PAPER, 1));

@@ -6,6 +6,7 @@
     <string name="next_month">下个月</string>
     <string name="today">今天</string>
     <string name="go_today">回到今天</string>
+    <string name="already_today">已在今天</string>
     <string name="add_event">添加事项</string>
     <string name="edit_event">编辑事项</string>
     <string name="selected">已选中</string>

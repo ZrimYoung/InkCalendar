@@ -3,6 +3,10 @@
 #ink-calendar-preview .ink-stage { min-height: 1020px; display: flex; align-items: flex-start; justify-content: center; padding: 20px 0; box-sizing: border-box; }
 #ink-calendar-preview .ink-app { --ink-paper: #fff; --ink-text: #000; --ink-muted: #000; --ink-rule: #000; --ink-accent: #000; --ink-size: 1; --ink-font: "Source Serif 4", "Noto Serif SC", "Songti SC", Georgia, serif; --ink-reading: "EB Garamond", "Noto Serif SC", "Songti SC", Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 16px 18px 22px; border: 1px solid var(--ink-rule); font-family: var(--ink-font); font-size: 20px; line-height: 1.3; color-scheme: light; }
 #ink-calendar-preview .ink-app * { box-sizing: border-box; transition: none; animation: none; }
+#ink-calendar-preview .ink-bilingual { display: grid; min-width: 0; }
+#ink-calendar-preview .ink-bilingual > span { grid-area: 1 / 1; min-width: 0; }
+#ink-calendar-preview .ink-bilingual > [aria-hidden="true"] { visibility: hidden; }
+#ink-calendar-preview .ink-toast { position: absolute; bottom: 18px; left: 18px; right: 18px; padding: 10px; border: 1px solid var(--ink-text); background: var(--ink-paper); text-align: center; font-size: 16px; z-index: 8; }
 #ink-calendar-preview .ink-app button { color: var(--ink-text); background: var(--ink-paper); font-family: inherit; border-radius: 0; box-shadow: none; font-weight: 400; letter-spacing: normal; text-transform: none; }
 #ink-calendar-preview .ink-app button:active { background: var(--ink-text); color: var(--ink-paper); }
 #ink-calendar-preview .ink-app button:focus-visible { outline: 2px solid var(--ink-text); outline-offset: 2px; }
@@ -97,9 +101,12 @@
   const addDays = (key, count) => { const d = dateOf(key); d.setUTCDate(d.getUTCDate() + count); return keyOf(d); };
   const monthOf = key => key.slice(0, 7) + '-01';
   const label = key => language === 'en' ? new Intl.DateTimeFormat('en-US', {month:'short',day:'numeric',timeZone:'UTC'}).format(dateOf(key)) : Number(key.slice(5, 7)) + '月' + Number(key.slice(8)) + '日';
-  const weekday = key => new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'zh-CN', {weekday:'long',timeZone:'UTC'}).format(dateOf(key));
-  const monthLabel = key => language === 'en' ? new Intl.DateTimeFormat('en-US', {month:'long',year:'numeric',timeZone:'UTC'}).format(dateOf(key)) : key.slice(0,4) + ' 年 ' + Number(key.slice(5,7)) + ' 月';
+  const weekday = (key, lang = language) => new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'zh-CN', {weekday:'long',timeZone:'UTC'}).format(dateOf(key));
+  const monthLabel = (key, lang = language) => lang === 'en' ? new Intl.DateTimeFormat('en-US', {month:'long',year:'numeric',timeZone:'UTC'}).format(dateOf(key)) : key.slice(0,4) + ' 年 ' + Number(key.slice(5,7)) + ' 月';
   const escapeText = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const bilingual = (zh, en) => '<span class="ink-bilingual"><span aria-hidden="' + (language !== 'zh') + '">' + escapeText(zh).replace(/\n/g,'<br>') + '</span><span aria-hidden="' + (language !== 'en') + '">' + escapeText(en).replace(/\n/g,'<br>') + '</span></span>';
+  const monthCopy = key => bilingual(monthLabel(key,'zh'),monthLabel(key,'en'));
+  const weekdayCopy = key => bilingual(weekday(key,'zh'),weekday(key,'en'));
   function validKey(value) { return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(dateOf(value).getTime()); }
   function persist() {
     if (!window.openai?.setWidgetState) return;
@@ -150,8 +157,8 @@
       app.style.setProperty('--ink-size', state.large ? '1.18' : '1');
       app.lang = language === 'en' ? 'en' : 'zh-CN';
       const hero = isWide
-        ? '<div class="ink-hero"><div class="ink-year">' + monthLabel(today) + '</div><div class="ink-number">05</div><div class="ink-weekday">' + weekday(today) + '</div></div>'
-        : '<div class="ink-hero"><div class="ink-number">05</div><div><div class="ink-year">' + monthLabel(today) + '</div><div class="ink-weekday">' + weekday(today) + '</div></div></div>';
+        ? '<div class="ink-hero"><div class="ink-year">' + monthCopy(today) + '</div><div class="ink-number">05</div><div class="ink-weekday">' + weekdayCopy(today) + '</div></div>'
+        : '<div class="ink-hero"><div class="ink-number">05</div><div><div class="ink-year">' + monthCopy(today) + '</div><div class="ink-weekday">' + weekdayCopy(today) + '</div></div></div>';
       const first = dateOf(state.month);
       const offset = (first.getUTCDay() + 6) % 7;
       const start = addDays(state.month, -offset);
@@ -162,7 +169,7 @@
         const classes = ['ink-day', 'cursor-interaction', date === today ? 'ink-today' : '', date === state.selected ? 'ink-selected' : '', monthOf(date) !== state.month ? 'ink-other' : ''].filter(Boolean).join(' ');
         cells += '<button type="button" class="' + classes + '" data-date="' + date + '" aria-label="' + date + (date === today ? t('，今天', ', Today') : '') + (marked ? t('，有事项', ', Has events') : '') + '" aria-pressed="' + (date === state.selected) + '"><span>' + Number(date.slice(8)) + '</span><span class="ink-dot" aria-hidden="true">' + (marked ? '•' : '') + '</span></button>';
       }
-      const calendar = '<div class="ink-calendar"><div class="ink-month-nav">' + icon('prev','chevron-left',t('上个月','Previous month')) + '<div class="ink-month-title">' + monthLabel(state.month) + '</div>' + icon('next','chevron-right',t('下个月','Next month')) + '</div><div class="ink-weekdays">' + (language === 'en' ? ['M','T','W','T','F','S','S'] : ['一','二','三','四','五','六','日']).map(d => '<span>' + d + '</span>').join('') + '</div><div class="ink-days">' + cells + '</div></div>';
+      const calendar = '<div class="ink-calendar"><div class="ink-month-nav">' + icon('prev','chevron-left',t('上个月','Previous month')) + '<div class="ink-month-title">' + monthCopy(state.month) + '</div>' + icon('next','chevron-right',t('下个月','Next month')) + '</div><div class="ink-weekdays">' + (language === 'en' ? ['M','T','W','T','F','S','S'] : ['一','二','三','四','五','六','日']).map(d => '<span>' + d + '</span>').join('') + '</div><div class="ink-days">' + cells + '</div></div>';
       const upcoming = state.selected === today;
       const end = upcoming ? addDays(today, 6) : state.selected;
       const list = events.filter(e => e.date >= state.selected && e.date <= end).sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
@@ -171,7 +178,7 @@
         return '<button type="button" class="ink-event cursor-interaction" data-event="' + event.id + '"><span class="ink-event-time">' + escapeText(when) + '</span><span class="ink-event-name">' + escapeText(event.title) + '</span></button>';
       }).join('');
       const agenda = '<div class="ink-agenda" aria-live="polite"><div class="ink-agenda-head"><div class="ink-agenda-heading">' + (upcoming ? t('近日','Upcoming') : label(state.selected)) + '</div>' + icon('add','plus',t('添加事项','Add event')) + '</div>' + (items || '<div class="ink-empty">' + (upcoming ? t('未来七天暂无事项','No events in the next seven days') : t('这一天暂无事项','No events on this day')) + '</div>') + '</div>';
-      app.innerHTML = '<header class="ink-top"><h1 class="ink-brand">' + t('墨日历', 'Ink Calendar') + '</h1>' + icon('today','calendar-days',t('回到今天','Back to today')) + icon('settings','sliders-horizontal',t('设置','Settings')) + '</header><div class="ink-body">' + (isWide ? '<div class="ink-identity">' + hero + agenda + '</div>' + calendar : hero + calendar + agenda) + '</div>';
+      app.innerHTML = '<header class="ink-top"><h1 class="ink-brand">' + bilingual('墨日历', 'Ink Calendar') + '</h1>' + icon('today','calendar-days',t('回到今天','Back to today')) + icon('settings','sliders-horizontal',t('设置','Settings')) + '</header><div class="ink-body">' + (isWide ? '<div class="ink-identity">' + hero + agenda + '</div>' + calendar : hero + calendar + agenda) + '</div>';
       if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
       if (focusSelector) app.querySelector(focusSelector)?.focus({preventScroll:true});
     }
@@ -217,6 +224,7 @@
     function settings() {
       const shade = openDialog('<h3>' + t('设置','Settings') + '</h3><label class="ink-check"><input type="checkbox" data-field="awake" ' + (state.awake ? 'checked' : '') + '>' + t('保持屏幕唤醒','Keep screen awake') + '</label><label class="ink-check"><input type="checkbox" data-field="full" ' + (state.full ? 'checked' : '') + '>' + t('全屏展示','Full screen') + '</label><label class="ink-check"><input type="checkbox" data-field="large" ' + (state.large ? 'checked' : '') + '>' + t('加大文字','Larger text') + '</label><label>' + t('语言 / Language','Language / 语言') + '<select data-field="language"><option value="zh" ' + (language === 'zh' ? 'selected' : '') + '>简体中文</option><option value="en" ' + (language === 'en' ? 'selected' : '') + '>English</option></select></label><div class="ink-note">' + t('应用打开时保持唤醒。<br>事项仅保存在本机。','Stays awake while this app is open.<br>Events are stored on this device.') + '</div><div class="ink-dialog-actions"><button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-save>' + t('保存','Save') + '</button></div>', t('设置','Settings'));
       shade.classList.add('ink-settings');
+      shade.querySelector('.ink-note').innerHTML = bilingual('应用打开时保持唤醒。\n事项仅保存在本机。', 'Stays awake while this app is open.\nEvents are stored on this device.');
       shade.querySelector('[data-save]').addEventListener('click', () => {
         for (const field of ['awake', 'full', 'large']) state[field] = shade.querySelector('[data-field="' + field + '"]').checked;
         language = shade.querySelector('[data-field="language"]').value;
@@ -232,7 +240,13 @@
       if (action === 'prev' || action === 'next') {
         moveMonth(action === 'next' ? 1 : -1);
       }
-      if (action === 'today') { state.selected = today; state.month = monthOf(today); render(); persist(); }
+      if (action === 'today') {
+        if (state.selected === today && state.month === monthOf(today)) {
+          app.querySelector('.ink-toast')?.remove();
+          const notice = document.createElement('div'); notice.className = 'ink-toast'; notice.setAttribute('role','status'); notice.textContent = t('已在今天','Already on today');
+          app.appendChild(notice); setTimeout(() => notice.remove(), 2200);
+        } else { state.selected = today; state.month = monthOf(today); render(); persist(); }
+      }
       if (action === 'add') editEvent(null);
       if (action === 'settings') settings();
     });
