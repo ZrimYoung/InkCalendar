@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -95,6 +96,7 @@ public final class MainActivity extends Activity {
             new InputStreamReader(getAssets().open("calendar/terms.csv"), "UTF-8")); }
         catch (IOException e) { throw new IllegalStateException("Missing packaged calendar data", e); }
         preferences = getSharedPreferences("display", MODE_PRIVATE);
+        applyScreenOrientation();
         applyLanguage();
         if (serif == null) serif = Typeface.createFromAsset(getAssets(), "fonts/NotoSerifSC-Regular.otf");
         if (display == null) {
@@ -182,6 +184,13 @@ public final class MainActivity extends Activity {
     private void scheduleDayChange() {
         handler.removeCallbacks(midnight);
         handler.postDelayed(midnight, Dates.untilNextDay(System.currentTimeMillis(), TimeZone.getDefault()));
+    }
+    private void applyScreenOrientation() {
+        String mode = preferences.getString("orientation", "auto");
+        int requested = "landscape".equals(mode) ? ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            : "portrait".equals(mode) ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+        if (getRequestedOrientation() != requested) setRequestedOrientation(requested);
     }
     private void applyDisplay() {
         if (preferences.getBoolean("awake", true)) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -593,6 +602,17 @@ public final class MainActivity extends Activity {
         CheckBox full = check(R.string.full_screen, preferences.getBoolean("full", true));
         CheckBox large = check(R.string.large_text, preferences.getBoolean("large", false));
         form.addView(awake); form.addView(full); form.addView(large);
+        TextView orientationTitle = label(R.string.screen_orientation, 16, false);
+        orientationTitle.setPadding(0, dp(16), 0, dp(8)); form.addView(orientationTitle);
+        RadioGroup orientations = new RadioGroup(this);
+        RadioButton automatic = radio(getString(R.string.orientation_auto));
+        RadioButton landscape = radio(getString(R.string.orientation_landscape));
+        RadioButton portrait = radio(getString(R.string.orientation_portrait));
+        orientations.addView(automatic); orientations.addView(landscape); orientations.addView(portrait);
+        String orientation = preferences.getString("orientation", "auto");
+        orientations.check("landscape".equals(orientation) ? landscape.getId()
+            : "portrait".equals(orientation) ? portrait.getId() : automatic.getId());
+        form.addView(orientations);
         CheckBox lunar=check(R.string.show_lunar,preferences.getBoolean("lunar",true));
         CheckBox terms=check(R.string.show_terms,preferences.getBoolean("terms",true));
         CheckBox holidays=check(R.string.show_holidays,preferences.getBoolean("holidays",true));
@@ -604,9 +624,8 @@ public final class MainActivity extends Activity {
         TextView languageTitle = label(R.string.language, 16, false);
         languageTitle.setPadding(0, dp(16), 0, dp(8)); form.addView(languageTitle);
         RadioGroup languages = new RadioGroup(this);
-        RadioButton chinese = new RadioButton(this); chinese.setId(View.generateViewId()); chinese.setText("简体中文"); chinese.setMinHeight(dp(48));
-        RadioButton english = new RadioButton(this); english.setId(View.generateViewId()); english.setText("English"); english.setMinHeight(dp(48));
-        styleChoice(chinese, true); styleChoice(english, true);
+        RadioButton chinese = radio("简体中文");
+        RadioButton english = radio("English");
         languages.addView(chinese); languages.addView(english);
         languages.check(displayLocale.equals(Locale.US) ? english.getId() : chinese.getId()); form.addView(languages);
         TextView note = label(R.string.settings_note, 14, false);
@@ -616,11 +635,13 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams saveBounds = weight(); saveBounds.leftMargin = dp(12);
         actions.addView(button(getString(R.string.save), () -> {
                 preferences.edit().putBoolean("awake", awake.isChecked()).putBoolean("full", full.isChecked()).putBoolean("large", large.isChecked())
+                    .putString("orientation", orientations.getCheckedRadioButtonId() == landscape.getId() ? "landscape"
+                        : orientations.getCheckedRadioButtonId() == portrait.getId() ? "portrait" : "auto")
                     .putBoolean("lunar",lunar.isChecked()).putBoolean("terms",terms.isChecked()).putBoolean("holidays",holidays.isChecked())
                     .putBoolean("hide_done",hideDone.isChecked()).putBoolean("desk",desk.isChecked())
                     .putString("language", languages.getCheckedRadioButtonId() == english.getId() ? "en" : "zh").apply();
                 settingsDialog.dismiss();
-                applyLanguage(); buildScreen(); applyDisplay();
+                applyScreenOrientation(); applyLanguage(); buildScreen(); applyDisplay();
             }), saveBounds);
         form.addView(actions);
         showPage(settingsDialog,form);
@@ -709,7 +730,7 @@ public final class MainActivity extends Activity {
         };
         ranges.setOnCheckedChangeListener((group,id) -> {preferences.edit().putInt("future_days",(Integer)ranges.findViewById(id).getTag()).apply();refreshFuture.run();});
         hide.setOnCheckedChangeListener((view,checked) -> {preferences.edit().putBoolean("hide_done",checked).apply();render();refreshFuture.run();});
-        form.addView(button(getString(R.string.close),() -> futureDialog.dismiss()));refreshFuture.run();showPage(futureDialog,form);
+        form.addView(button(getString(R.string.back),() -> futureDialog.dismiss()));refreshFuture.run();showPage(futureDialog,form);
     }
     private String dayCount(int resource,long days) { return getResources().getQuantityString(resource,(int)days,days); }
     private String milestoneSummary(Milestone item) {
@@ -750,14 +771,18 @@ public final class MainActivity extends Activity {
     private void showMilestones() {
         milestonesDialog=new Dialog(this);milestonesDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form=pageForm(R.string.milestones),list=column();
-        ((LinearLayout)form.getChildAt(0)).addView(icon(LineIcon.ADD,R.string.add_milestone,() -> showMilestoneEditor(null)));
+        Button close = button(getString(R.string.close), () -> milestonesDialog.dismiss());
+        close.setContentDescription(getString(R.string.close));
+        ((LinearLayout)form.getChildAt(0)).addView(close);
         form.addView(list);
         refreshMilestones=() -> {
             list.removeAllViews();List<Milestone> items=store.milestones();
             if(items.isEmpty())list.addView(label(R.string.empty_milestones,18,false));
             for(Milestone item:items)addMilestoneRow(list,item,false);
         };
-        form.addView(button(getString(R.string.close),() -> milestonesDialog.dismiss()));refreshMilestones.run();showPage(milestonesDialog,form);
+        Button add = button(getString(R.string.add_milestone), () -> showMilestoneEditor(null));
+        add.setContentDescription(getString(R.string.add_milestone));
+        form.addView(add);refreshMilestones.run();showPage(milestonesDialog,form);
     }
     private int pinnedCount() {int count=0;for(Milestone item:store.milestones())if(item.pinned)count++;return count;}
     private int selectedMilestoneKind() { return (Integer)milestoneKinds.findViewById(milestoneKinds.getCheckedRadioButtonId()).getTag(); }
@@ -804,6 +829,10 @@ public final class MainActivity extends Activity {
         showPage(milestoneEditor,form);
     }
 
+    private RadioButton radio(String title) {
+        RadioButton choice = new RadioButton(this); choice.setId(View.generateViewId()); choice.setText(title);
+        styleChoice(choice, true); return choice;
+    }
     private CheckBox check(int title, boolean checked) {
         StableCheckBox box=new StableCheckBox(this);box.setText(getString(title));styleChoice(box,false);box.setChecked(checked);
         String alternate=alternateString(title);box.reserveFor(alternate,fontFor(alternate,display));return box;

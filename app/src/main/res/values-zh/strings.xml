@@ -36,6 +36,10 @@
     <string name="keep_awake">保持屏幕唤醒</string>
     <string name="full_screen">全屏展示</string>
     <string name="large_text">加大文字</string>
+    <string name="screen_orientation">屏幕方向</string>
+    <string name="orientation_auto">自动（跟随系统）</string>
+    <string name="orientation_landscape">强制横屏</string>
+    <string name="orientation_portrait">强制竖屏</string>
     <string name="language">语言 / Language</string>
     <string name="settings_note">应用打开时保持唤醒。\n事项仅保存在本机。</string>
     <string name="show_lunar">农历（仅中文）</string>
@@ -51,7 +55,8 @@
     <string name="next_7">7 天</string>
     <string name="next_30">30 天</string>
     <string name="empty_range">此范围内暂无事项</string>
-    <string name="close">返回</string>
+    <string name="back">返回</string>
+    <string name="close">关闭</string>
     <string name="jump_date">跳转日期</string>
     <string name="display_mode">桌面展示模式</string>
     <string name="display_note">突出今天、置顶纪念日和最多三条近期未完成事项。在设置中可返回月历模式。</string>
