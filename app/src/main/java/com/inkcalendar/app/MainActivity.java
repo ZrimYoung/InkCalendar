@@ -1,8 +1,6 @@
 package com.inkcalendar.app;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +11,7 @@ import android.content.res.Configuration;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
@@ -21,14 +20,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.RelativeSizeSpan;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -39,7 +40,6 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -60,8 +60,7 @@ public final class MainActivity extends Activity {
     private static Typeface display, headline, labelFont, reading;
     private Locale displayLocale;
     private boolean registered;
-    private AlertDialog editor;
-    private Dialog settingsDialog;
+    private Dialog editor, settingsDialog, dateDialog, deleteDialog;
     private EditText titleInput, timeInput;
     private String editingDate;
     private long editingId;
@@ -113,6 +112,8 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy() {
         if (editor != null) editor.dismiss();
         if (settingsDialog != null) settingsDialog.dismiss();
+        if (dateDialog != null) dateDialog.dismiss();
+        if (deleteDialog != null) deleteDialog.dismiss();
         store.close(); super.onDestroy();
     }
     @Override protected void onSaveInstanceState(Bundle out) {
@@ -363,55 +364,172 @@ public final class MainActivity extends Activity {
 
     private void showEditor(long id, String date, String title, String time) {
         editingId = id; editingDate = date;
-        LinearLayout form = column(); form.setPadding(dp(20), dp(8), dp(20), dp(8));
-        Button dateButton = button(getString(R.string.date) + "  " + date, () -> {
-            Calendar c = Dates.parse(editingDate);
-            DatePickerDialog picker = new DatePickerDialog(this, (view, y, m, d) -> {
-                editingDate = String.format(Locale.US, "%04d-%02d-%02d", y, m + 1, d);
-                ((Button) form.getChildAt(0)).setText(getString(R.string.date) + "  " + editingDate);
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-            Calendar min = Calendar.getInstance(); min.clear(); min.set(1900, 0, 1);
-            Calendar max = Calendar.getInstance(); max.clear(); max.set(2100, 11, 31, 23, 59);
-            picker.getDatePicker().setMinDate(min.getTimeInMillis()); picker.getDatePicker().setMaxDate(max.getTimeInMillis());
-            picker.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.save), picker);
-            picker.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel), (android.content.DialogInterface.OnClickListener) null);
-            picker.show(); styleDialog(picker);
-        });
+        editor = new Dialog(this); editor.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form = pageForm(id == 0 ? R.string.add_event : R.string.edit_event);
+        if (id != 0) ((LinearLayout) form.getChildAt(0)).addView(icon(LineIcon.DELETE, R.string.delete, this::confirmDelete));
+        fieldLabel(form, R.string.date);
+        Button dateButton = button(date, () -> {});
+        dateButton.setContentDescription(getString(R.string.choose_date));
+        dateButton.setOnClickListener(v -> { hideKeyboard(titleInput); showDatePage(dateButton); });
         form.addView(dateButton);
-        titleInput = new EditText(this); titleInput.setText(title); titleInput.setHint(R.string.event_hint);
-        titleInput.setTextColor(Color.BLACK); titleInput.setTextSize(20); titleInput.setMinLines(2);
+        fieldLabel(form, R.string.event_title);
+        titleInput = input(title, R.string.event_hint);
         titleInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        titleInput.setTypeface(serif); titleInput.setMinLines(3); titleInput.setGravity(Gravity.TOP | Gravity.LEFT);
         titleInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
         titleInput.setContentDescription(getString(R.string.event_title)); form.addView(titleInput);
-        TextView help = text(getString(R.string.time_optional), 14, false); form.addView(help);
-        timeInput = new EditText(this); timeInput.setText(time); timeInput.setHint("09:30"); timeInput.setSingleLine(true);
+        fieldLabel(form, R.string.time_optional);
+        timeInput = input(time, 0); timeInput.setHint("09:30"); timeInput.setSingleLine(true);
         timeInput.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_TIME);
-        timeInput.setTextColor(Color.BLACK); timeInput.setContentDescription(getString(R.string.time_description)); form.addView(timeInput);
-        ScrollView scroll = new ScrollView(this); scroll.addView(form);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(id == 0 ? R.string.add_event : R.string.edit_event)
-            .setView(scroll).setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.save, null);
-        if (id != 0) builder.setNeutralButton(R.string.delete, null);
-        editor = builder.create();
-        editor.setOnShowListener(d -> {
-            editor.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                Event event;
-                try { event = new Event(editingId, editingDate, titleInput.getText().toString(), timeInput.getText().toString()); }
-                catch (IllegalArgumentException error) { toast(validationMessage(error)); return; }
-                try { store.save(event); }
-                catch (RuntimeException error) { toast(getString(R.string.save_failed)); return; }
-                selected = event.date; displayedMonth = Dates.month(selected); editor.dismiss(); render();
-            });
-            if (id != 0) editor.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
-                AlertDialog confirm = new AlertDialog.Builder(this)
-                .setTitle(R.string.delete_confirm).setMessage(title).setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    try { store.delete(id); editor.dismiss(); render(); }
-                    catch (RuntimeException error) { toast(getString(R.string.delete_failed)); }
-                }).create();
-                confirm.show(); styleDialog(confirm);
-            });
+        timeInput.setTypeface(display); timeInput.setContentDescription(getString(R.string.time_description)); form.addView(timeInput);
+        TextView error = errorLabel(form);
+        form.addView(actions(getString(R.string.cancel), () -> editor.dismiss(), getString(R.string.save), () -> {
+            hideKeyboard(timeInput);
+            Event event;
+            try { event = new Event(editingId, editingDate, titleInput.getText().toString(), timeInput.getText().toString()); }
+            catch (IllegalArgumentException e) { showError(error, validationMessage(e)); return; }
+            try { store.save(event); }
+            catch (RuntimeException e) { showError(error, getString(R.string.save_failed)); return; }
+            selected = event.date; displayedMonth = Dates.month(selected); editor.dismiss(); render();
+        }));
+        editor.setOnDismissListener(d -> {
+            hideKeyboard(titleInput);
+            if (dateDialog != null) dateDialog.dismiss();
+            if (deleteDialog != null) deleteDialog.dismiss();
         });
-        editor.show(); styleDialog(editor);
+        showPage(editor, form);
+    }
+
+    private void confirmDelete() {
+        hideKeyboard(titleInput);
+        deleteDialog = new Dialog(this); deleteDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form = pageForm(R.string.delete_confirm);
+        TextView summary = text(titleInput.getText().toString(), 20, false);
+        summary.setIncludeFontPadding(false); summary.setPadding(0, dp(12), 0, dp(12)); form.addView(summary);
+        TextView error = errorLabel(form);
+        form.addView(actions(getString(R.string.cancel), () -> deleteDialog.dismiss(), getString(R.string.delete), () -> {
+            try { store.delete(editingId); deleteDialog.dismiss(); editor.dismiss(); render(); }
+            catch (RuntimeException e) { showError(error, getString(R.string.delete_failed)); }
+        }));
+        showPage(deleteDialog, form);
+    }
+
+    private void showDatePage(Button dateButton) {
+        dateDialog = new Dialog(this); dateDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form = pageForm(R.string.choose_date);
+        fieldLabel(form, R.string.date_format);
+        EditText value = input(editingDate, 0); value.setSingleLine(true);
+        value.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_DATE);
+        value.setTypeface(display); value.setContentDescription(getString(R.string.date_format)); form.addView(value);
+        final String[] month = { Dates.month(editingDate) };
+        final Runnable[] draw = new Runnable[1];
+        MonthSwipeLayout calendar = new MonthSwipeLayout(this, by -> {
+            String target = Dates.addMonths(month[0], by);
+            if (target.compareTo("1900-01-01") >= 0 && target.compareTo("2100-12-01") <= 0) { month[0] = target; draw[0].run(); }
+        });
+        LinearLayout.LayoutParams calendarBounds = new LinearLayout.LayoutParams(-1, -2); calendarBounds.topMargin = dp(16); form.addView(calendar, calendarBounds);
+        draw[0] = () -> {
+            calendar.removeAllViews();
+            LinearLayout nav = row();
+            ImageButton prev = icon(LineIcon.PREVIOUS, R.string.previous_month, () -> { month[0] = Dates.addMonths(month[0], -1); draw[0].run(); });
+            ImageButton nextMonth = icon(LineIcon.NEXT, R.string.next_month, () -> { month[0] = Dates.addMonths(month[0], 1); draw[0].run(); });
+            prev.setEnabled(!month[0].equals("1900-01-01")); nextMonth.setEnabled(!month[0].equals("2100-12-01"));
+            StableTextView heading = stableText(monthLabel(month[0]), 20, true); heading.setGravity(Gravity.CENTER);
+            heading.reserveFor(alternateMonth(month[0]), fontFor(alternateMonth(month[0]), labelFont));
+            nav.addView(prev); nav.addView(heading, weight()); nav.addView(nextMonth); calendar.addView(nav);
+            LinearLayout weekdays = row();
+            String[] labels = displayLocale.equals(Locale.US) ? new String[]{"M","T","W","T","F","S","S"} : new String[]{"一","二","三","四","五","六","日"};
+            for (String name : labels) {
+                TextView day = stableText(name, 12, true); day.setGravity(Gravity.CENTER); weekdays.addView(day, new LinearLayout.LayoutParams(0, dp(36), 1));
+            }
+            calendar.addView(weekdays);
+            String[] days = Dates.grid(month[0]);
+            for (int r = 0; r < 6; r++) {
+                LinearLayout week = row();
+                for (int c = 0; c < 7; c++) {
+                    String key = days[r * 7 + c]; boolean chosen = key.equals(value.getText().toString());
+                    TextView cell = text(String.valueOf(Integer.parseInt(key.substring(8))), Dates.month(key).equals(month[0]) ? 20 : 16, chosen);
+                    cell.setIncludeFontPadding(false); cell.setGravity(Gravity.CENTER);
+                    cell.setTextColor(interactiveText(chosen ? INK : PAPER, INK)); cell.setBackground(background(chosen ? INK : PAPER, key.equals(today) ? 1 : 0));
+                    cell.setContentDescription(key + (chosen ? ", " + getString(R.string.selected) : "")); cell.setSelected(chosen);
+                    boolean valid = key.compareTo("1900-01-01") >= 0 && key.compareTo("2100-12-31") <= 0;
+                    cell.setEnabled(valid); cell.setFocusable(valid);
+                    if (valid) cell.setOnClickListener(v -> { hideKeyboard(value); value.setText(key); });
+                    week.addView(cell, new LinearLayout.LayoutParams(0, dp(48 * Math.max(textScale, getResources().getConfiguration().fontScale)), 1));
+                }
+                calendar.addView(week); calendar.addView(rule(INK), new LinearLayout.LayoutParams(-1, dp(1)));
+            }
+        };
+        value.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                try { Dates.parse(s.toString()); month[0] = Dates.month(s.toString()); draw[0].run(); }
+                catch (IllegalArgumentException ignored) { /* Keep the current month while a date is incomplete. */ }
+            }
+            public void afterTextChanged(Editable s) {}
+        });
+        draw[0].run();
+        TextView error = errorLabel(form);
+        form.addView(actions(getString(R.string.cancel), () -> dateDialog.dismiss(), getString(R.string.save), () -> {
+            String chosen = value.getText().toString().trim();
+            try { Dates.parse(chosen); }
+            catch (IllegalArgumentException e) { showError(error, getString(R.string.date_invalid)); return; }
+            editingDate = chosen; dateButton.setText(StableTextView.uniformLines(chosen, dateButton)); hideKeyboard(value); dateDialog.dismiss();
+        }));
+        dateDialog.setOnDismissListener(d -> hideKeyboard(value));
+        showPage(dateDialog, form);
+    }
+
+    private LinearLayout pageForm(int title) {
+        LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20)); form.setBackgroundColor(PAPER);
+        form.setFocusableInTouchMode(true);
+        LinearLayout header = row(); header.addView(label(title, 26, true), weight()); form.addView(header);
+        LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(4)); divider.setMargins(0, dp(12), 0, dp(8)); form.addView(rule(INK), divider);
+        return form;
+    }
+    private void fieldLabel(LinearLayout form, int id) {
+        TextView field = label(id, 15, false); field.setPadding(0, dp(16), 0, dp(8)); form.addView(field);
+    }
+    private EditText input(String value, int hint) {
+        EditText field = new EditText(this); field.setTextSize(20 * textScale); field.setTypeface(serif);
+        field.setTextColor(INK); field.setHintTextColor(INK); field.setIncludeFontPadding(false);
+        field.setBackgroundResource(R.drawable.ink_input); field.setPadding(dp(12), dp(10), dp(12), dp(10));
+        field.setMinimumHeight(dp(48)); field.setText(value); if (hint != 0) field.setHint(hint);
+        return field;
+    }
+    private TextView errorLabel(LinearLayout form) {
+        TextView error = stableText("", 15, true); error.setPadding(0, dp(12), 0, 0); error.setVisibility(View.GONE);
+        error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); form.addView(error); return error;
+    }
+    private void showError(TextView error, String message) {
+        error.setText(message); error.setVisibility(View.VISIBLE);
+        error.post(() -> error.requestRectangleOnScreen(new Rect(0, 0, error.getWidth(), error.getHeight()), true));
+    }
+    private LinearLayout actions(String cancel, Runnable cancelAction, String accept, Runnable acceptAction) {
+        LinearLayout actions = row(); actions.setPadding(0, dp(20), 0, 0);
+        actions.addView(button(cancel, cancelAction), weight());
+        LinearLayout.LayoutParams bounds = weight(); bounds.leftMargin = dp(12);
+        actions.addView(button(accept, acceptAction), bounds); return actions;
+    }
+    private void hideKeyboard(View input) {
+        if (input != null) ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(input.getWindowToken(), 0);
+    }
+    private void showPage(Dialog page, LinearLayout form) {
+        ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(PAPER);
+        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER); scroll.addView(form); page.setContentView(scroll);
+        Window window = page.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(shape(PAPER, 0)); window.setWindowAnimations(0);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+            if (preferences.getBoolean("awake", true)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (preferences.getBoolean("full", true)) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN);
+            }
+        }
+        page.show(); if (window != null) window.setLayout(-1, -1);
+        form.requestFocus();
     }
     private void showSettings() {
         settingsDialog = new Dialog(this);
@@ -517,27 +635,6 @@ public final class MainActivity extends Activity {
         button.setOnClickListener(v -> action.run());
         button.setOnLongClickListener(v -> { toast(getString(label)); return true; });
         return button;
-    }
-    private void styleDialog(AlertDialog dialog) {
-        if (dialog.getWindow() == null) return;
-        dialog.getWindow().setWindowAnimations(0);
-        dialog.getWindow().setBackgroundDrawable(shape(PAPER, 1));
-        applyTypeface(dialog.getWindow().getDecorView());
-    }
-    private void applyTypeface(View view) {
-        if (view instanceof TextView) {
-            TextView label = (TextView) view;
-            label.setTypeface(view instanceof EditText ? serif : fontFor(label.getText(), display));
-            label.setTextColor(INK);
-            if (label instanceof Button && !(label instanceof android.widget.CompoundButton)) {
-                label.setTextColor(interactiveText(PAPER, INK));
-                label.setBackground(background(PAPER, 1));
-            }
-        }
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) applyTypeface(group.getChildAt(i));
-        }
     }
     private String validationMessage(IllegalArgumentException error) {
         String key = error.getMessage();

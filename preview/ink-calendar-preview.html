@@ -45,18 +45,22 @@
 #ink-calendar-preview .ink-landscape .ink-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 0; }
 #ink-calendar-preview .ink-landscape .ink-number { font-size: calc(104px * var(--ink-size)); }
 #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 10px; }
-#ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
-#ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid var(--ink-text); background: var(--ink-paper); color: var(--ink-text); padding: 18px; }
+#ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-start; justify-content: center; padding: 20px 18px; background: var(--ink-paper); }
+#ink-calendar-preview .ink-shade[hidden] { display: none; }
+#ink-calendar-preview .ink-dialog { width: 100%; max-width: 100%; border: 0; background: var(--ink-paper); color: var(--ink-text); padding: 0; }
 #ink-calendar-preview .ink-shade.ink-settings { background: var(--ink-paper); padding: 20px 18px; }
 #ink-calendar-preview .ink-settings .ink-dialog { width: 100%; border: 0; padding: 0; }
 #ink-calendar-preview .ink-settings .ink-check { min-height: 48px; }
 #ink-calendar-preview .ink-dialog h3 { font: 900 26px/1.2 var(--ink-font); border-bottom: 4px solid var(--ink-text); padding-bottom: 12px; margin: 0 0 16px; }
+#ink-calendar-preview .ink-editor-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 4px solid var(--ink-text); }
+#ink-calendar-preview .ink-editor-head h3 { flex: 1; border: 0; padding: 0; margin: 0; }
 #ink-calendar-preview .ink-dialog label { display: block; font-size: 16px; margin-bottom: 12px; }
 #ink-calendar-preview .ink-dialog input:not([type=checkbox]), #ink-calendar-preview .ink-dialog textarea, #ink-calendar-preview .ink-dialog select { font: 16px/1.5 var(--ink-font); color: var(--ink-text); background: var(--ink-paper); border: 1px solid var(--ink-text); border-radius: 0; padding: 8px; width: 100%; min-width: 0; display: block; margin-top: 5px; }
-#ink-calendar-preview .ink-dialog textarea { resize: vertical; min-height: 88px; }
+#ink-calendar-preview .ink-dialog textarea { resize: vertical; min-height: 112px; font-family: var(--ink-reading); }
 #ink-calendar-preview .ink-dialog .ink-check { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 #ink-calendar-preview .ink-dialog input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--ink-text); }
 #ink-calendar-preview .ink-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#ink-calendar-preview .ink-dialog-actions .ink-button { flex: 1; }
 #ink-calendar-preview .ink-note { font-size: 14px; line-height: 1.6; }
 #ink-calendar-preview .ink-error { font-size: 14px; font-weight: 650; color: var(--ink-accent); margin-top: 8px; }
 @media (hover: hover) {
@@ -120,6 +124,7 @@
     const state = { selected: validKey(previous.selected) ? previous.selected : today, month: validKey(previous.month) ? monthOf(previous.month) : monthOf(today), large: previous.large === true, awake: true, full: true };
     const events = examples.map(item => ({...item}));
     const isWide = name === 'landscape';
+    let dialogs = [];
     let swipe = null, lastSwipeAt = -1000;
     function moveMonth(by) {
       const next = dateOf(state.month); next.setUTCMonth(next.getUTCMonth() + by);
@@ -152,6 +157,7 @@
     }, true);
     const icon = (action, glyph, title) => '<button type="button" class="ink-icon cursor-interaction" data-action="' + action + '" aria-label="' + title + '" data-tooltip="' + title + '"><i data-lucide="' + glyph + '" aria-hidden="true"></i></button>';
     function render() {
+      dialogs = [];
       const focused = app.contains(document.activeElement) ? document.activeElement : null;
       const focusSelector = focused?.dataset.date ? '[data-date="' + focused.dataset.date + '"]' : focused?.dataset.action ? '[data-action="' + focused.dataset.action + '"]' : null;
       app.style.setProperty('--ink-size', state.large ? '1.18' : '1');
@@ -182,12 +188,19 @@
       if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
       if (focusSelector) app.querySelector(focusSelector)?.focus({preventScroll:true});
     }
-    function closeDialog() { app.querySelector('.ink-shade')?.remove(); app.querySelector('[data-action="add"]')?.focus(); }
+    function closeDialog() {
+      dialogs.pop()?.remove();
+      const previous = dialogs[dialogs.length - 1];
+      if (previous) { previous.hidden = false; previous.querySelector('input,textarea,button')?.focus(); }
+      else app.querySelector('[data-action="add"]')?.focus();
+    }
     function openDialog(content, title) {
-      app.querySelector('.ink-shade')?.remove();
+      if (dialogs.length) dialogs[dialogs.length - 1].hidden = true;
       const shade = document.createElement('div'); shade.className = 'ink-shade';
       shade.innerHTML = '<div class="ink-dialog" role="dialog" aria-modal="true" aria-label="' + title + '">' + content + '</div>';
       app.appendChild(shade);
+      dialogs.push(shade);
+      if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
       shade.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', closeDialog));
       shade.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeDialog();
@@ -204,6 +217,15 @@
       const draft = event || {date: state.selected, title: '', time: ''};
       const title = event ? t('编辑事项','Edit event') : t('添加事项','Add event');
       const shade = openDialog('<h3>' + title + '</h3><label>' + t('日期','Date') + '<input type="date" min="1900-01-01" max="2100-12-31" data-field="date" value="' + draft.date + '"></label><label>' + t('事项','Event') + '<textarea data-field="title" maxlength="120" placeholder="' + t('写下事项（最多 120 字）','What is planned? (120 characters max)') + '">' + escapeText(draft.title) + '</textarea></label><label>' + t('时间 · 可选，留空为全天','Time · optional, blank for all day') + '<input type="text" inputmode="numeric" data-field="time" placeholder="09:30" value="' + draft.time + '"></label><div class="ink-error" role="alert"></div><div class="ink-dialog-actions">' + (event ? '<button type="button" class="ink-button cursor-interaction" data-delete>' + t('删除','Delete') + '</button>' : '') + '<button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-save>' + t('保存','Save') + '</button></div>', title);
+      const heading = shade.querySelector('h3');
+      const editorHead = document.createElement('div'); editorHead.className = 'ink-editor-head';
+      heading.replaceWith(editorHead); editorHead.appendChild(heading);
+      const deleteAction = shade.querySelector('[data-delete]');
+      if (deleteAction) {
+        deleteAction.className = 'ink-icon cursor-interaction'; deleteAction.setAttribute('aria-label',t('删除','Delete'));
+        deleteAction.innerHTML = '<i data-lucide="trash-2" aria-hidden="true"></i>'; editorHead.appendChild(deleteAction);
+        if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
+      }
       shade.querySelector('[data-save]').addEventListener('click', () => {
         const date = shade.querySelector('[data-field="date"]').value;
         const content = shade.querySelector('[data-field="title"]').value.trim();

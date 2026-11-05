@@ -17,6 +17,8 @@
     <string name="empty_day">No events on this day</string>
     <string name="read_failed">Could not load events. Please reopen the app.</string>
     <string name="date">Date</string>
+    <string name="choose_date">Choose date</string>
+    <string name="date_format">Date · YYYY-MM-DD</string>
     <string name="event_title">Event</string>
     <string name="event_hint">What is planned? (120 characters max)</string>
     <string name="time_optional">Time · optional, blank for all day</string>
