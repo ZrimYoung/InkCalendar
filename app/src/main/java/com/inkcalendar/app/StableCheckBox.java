@@ -15,7 +15,9 @@ final class StableCheckBox extends CheckBox {
     private final TextPaint alternatePaint=new TextPaint();
     private int measuredWidth=-1, alternateHeight;
     private float measuredSize=-1;
+    private Typeface chinese;
     StableCheckBox(Context context) {super(context);}
+    void useChinese(Typeface face){chinese=face;setText(ThemeFonts.mixed(getText(),face,false));}
     void reserveFor(String text,Typeface face) {
         alternate=text;alternatePaint.setTypeface(face);measuredWidth=-1;requestLayout();
     }
@@ -29,6 +31,6 @@ final class StableCheckBox extends CheckBox {
     @SuppressWarnings("deprecation")
     private void measureAlternate(int width) {
         measuredWidth=width;measuredSize=getTextSize();alternatePaint.setTextSize(getTextSize());
-        alternateHeight=new StaticLayout(StableTextView.uniformLines(alternate,this),alternatePaint,width,Layout.Alignment.ALIGN_NORMAL,getLineSpacingMultiplier(),getLineSpacingExtra(),false).getHeight();
+        alternateHeight=new StaticLayout(StableTextView.uniformLines(ThemeFonts.mixed(alternate,chinese,false),this),alternatePaint,width,Layout.Alignment.ALIGN_NORMAL,getLineSpacingMultiplier(),getLineSpacingExtra(),false).getHeight();
     }
 }

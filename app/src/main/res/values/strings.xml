@@ -74,4 +74,46 @@
     <plurals name="days_until"><item quantity="one">%1$d day to go</item><item quantity="other">%1$d days to go</item></plurals>
     <plurals name="days_since"><item quantity="one">%1$d day since</item><item quantity="other">%1$d days since</item></plurals>
     <string name="date_range">%1$s — %2$s</string>
+    <string name="appearance">Appearance and themes</string>
+    <string name="theme_style">Style</string>
+    <string name="theme_font">Font</string>
+    <string name="theme_font_note">Chinese is paired automatically with the English font.</string>
+    <string name="theme_components">Customize components</string>
+    <string name="theme_reset">Use preset components</string>
+    <string name="theme_custom">Customized</string>
+    <string name="theme_original">Ink Classic</string>
+    <string name="theme_minimal">Quiet Space</string>
+    <string name="theme_editorial">Editorial</string>
+    <string name="theme_grid">Notebook</string>
+    <string name="theme_ticket">Ticket</string>
+    <string name="theme_today">Today Board</string>
+    <string name="theme_date">Date layout</string>
+    <string name="theme_calendar">Month calendar</string>
+    <string name="theme_agenda">Event layout</string>
+    <string name="theme_buttons">Icon buttons</string>
+    <string name="theme_flow">Page order</string>
+    <string name="theme_tracking">Letter spacing</string>
+    <string name="theme_caps">Heading case</string>
+    <string name="theme_split">Side by side</string>
+    <string name="theme_masthead">Large column</string>
+    <string name="theme_tiles">Digit tiles</string>
+    <string name="theme_reverse">Date on right</string>
+    <string name="theme_center">Centered</string>
+    <string name="theme_open">Open · circle</string>
+    <string name="theme_ruled">Weekly rules</string>
+    <string name="theme_plain">Open · underline</string>
+    <string name="theme_timeline">Time on left</string>
+    <string name="theme_stacked">Stacked</string>
+    <string name="theme_cards">Outlined cards</string>
+    <string name="theme_ledger">Time on right</string>
+    <string name="theme_bare">No border</string>
+    <string name="theme_outline">Outlined</string>
+    <string name="theme_solid">Black fill</string>
+    <string name="theme_calendar_first">Calendar first</string>
+    <string name="theme_agenda_first">Events first</string>
+    <string name="theme_normal">Regular</string>
+    <string name="theme_tight">Tight</string>
+    <string name="theme_spaced">Spaced</string>
+    <string name="theme_case_normal">Mixed case</string>
+    <string name="theme_case_upper">Uppercase</string>
 </resources>

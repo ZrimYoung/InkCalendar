@@ -73,8 +73,14 @@ public final class MainActivity extends Activity {
     private LinearLayout root, monthGrid, agenda;
     private TextView monthTitle, dayNumber, dateTitle, dayTitle;
     private ImageButton previous, next;
-    private static Typeface serif;
-    private static Typeface display, headline, labelFont, reading;
+    private Typeface serif, display, headline, labelFont, reading;
+    private ThemeConfig theme;
+    private ThemeFonts fonts;
+    private TextView firstDigit,secondDigit;
+    private Dialog appearanceDialog,componentDialog;
+    private ThemeConfig settingsThemeDraft,appearanceThemeDraft,componentThemeDraft;
+    private Bundle restoredSettings;
+    private Runnable settingsThemeChanged,appearanceChanged;
     private Locale displayLocale;
     private boolean registered;
     private Dialog editor, settingsDialog, dateDialog, deleteDialog;
@@ -96,13 +102,7 @@ public final class MainActivity extends Activity {
         catch (IOException e) { throw new IllegalStateException("Missing packaged calendar data", e); }
         preferences = getSharedPreferences("display", MODE_PRIVATE);
         applyLanguage();
-        if (serif == null) serif = Typeface.createFromAsset(getAssets(), "fonts/NotoSerifSC-Regular.otf");
-        if (display == null) {
-            display = Typeface.createFromAsset(getAssets(), "fonts/NewsprintDisplay-Regular.ttf");
-            headline = Typeface.createFromAsset(getAssets(), "fonts/NewsprintDisplay-Black.ttf");
-            labelFont = Typeface.createFromAsset(getAssets(), "fonts/NewsprintDisplay-Semibold.ttf");
-            reading = Typeface.createFromAsset(getAssets(), "fonts/NewsprintReading-Regular.ttf");
-        }
+        fonts=new ThemeFonts(getAssets());loadTheme();
         today = state == null ? Dates.today() : state.getString("today", Dates.today());
         selected = state == null ? today : state.getString("selected", today);
         displayedMonth = state == null ? Dates.month(today) : state.getString("month", Dates.month(today));
@@ -118,6 +118,12 @@ public final class MainActivity extends Activity {
             showMilestoneEditor(new Milestone(state.getLong("milestoneId"),state.getString("milestoneDate"),
                 state.getString("milestoneTitle").trim().isEmpty()?"draft":state.getString("milestoneTitle"),state.getInt("milestoneKind"),state.getBoolean("milestoneLunar"),state.getBoolean("milestonePinned")));
             milestoneTitle.setText(state.getString("milestoneTitle"));
+        }
+        if(state!=null&&state.getBoolean("settingsOpen")){
+            restoredSettings=state;showSettings();
+            if(state.getBoolean("appearanceOpen"))showAppearance(settingsThemeDraft,settingsThemeChanged);
+            if(state.getBoolean("componentsOpen"))showComponents(appearanceThemeDraft,appearanceChanged);
+            restoredSettings=null;
         }
     }
 
@@ -145,6 +151,8 @@ public final class MainActivity extends Activity {
         if (futureDialog != null) futureDialog.dismiss();
         if (milestonesDialog != null) milestonesDialog.dismiss();
         if (milestoneEditor != null) milestoneEditor.dismiss();
+        if (appearanceDialog != null) appearanceDialog.dismiss();
+        if (componentDialog != null) componentDialog.dismiss();
         store.close(); super.onDestroy();
     }
     @Override protected void onSaveInstanceState(Bundle out) {
@@ -163,6 +171,14 @@ public final class MainActivity extends Activity {
             out.putString("milestoneDate",milestoneDate);out.putString("milestoneTitle",milestoneTitle.getText().toString());
             out.putInt("milestoneKind",selectedMilestoneKind());
             out.putBoolean("milestoneLunar",milestoneLunar.isChecked());out.putBoolean("milestonePinned",milestonePinned.isChecked());
+        }
+        if(settingsDialog!=null&&settingsDialog.isShowing()){
+            out.putBoolean("settingsOpen",true);settingsThemeDraft.bundle(out,"settingsTheme.");
+            View decor=settingsDialog.getWindow().getDecorView();
+            for(String key:new String[]{"awake","full","large","lunar","terms","holidays","hide_done","desk"})out.putBoolean("settings."+key,((CheckBox)decor.findViewWithTag("setting:"+key)).isChecked());
+            RadioGroup languages=decor.findViewWithTag("setting:language");out.putString("settings.language",(String)languages.findViewById(languages.getCheckedRadioButtonId()).getTag());
+            if(appearanceDialog!=null&&appearanceDialog.isShowing()){out.putBoolean("appearanceOpen",true);appearanceThemeDraft.bundle(out,"appearanceTheme.");}
+            if(componentDialog!=null&&componentDialog.isShowing()){out.putBoolean("componentsOpen",true);componentThemeDraft.bundle(out,"componentTheme.");}
         }
         super.onSaveInstanceState(out);
     }
@@ -220,97 +236,68 @@ public final class MainActivity extends Activity {
     }
     private String shortDate(String date) { return formatDate(date, displayLocale.equals(Locale.US) ? "MMM d" : "M月d日"); }
 
-    private void buildScreen() {
-        textScale = preferences.getBoolean("large", false) ? 1.18f : 1f;
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true); scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        scroll.setVerticalScrollBarEnabled(false); scroll.setBackgroundColor(PAPER);
-        root = column(); root.setPadding(dp(18), dp(12), dp(18), dp(18));
-        scroll.addView(root);
-        setContentView(scroll);
-        if (Build.VERSION.SDK_INT >= 35) {
-            scroll.setOnApplyWindowInsetsListener((v, insets) -> {
-                android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars() | android.view.WindowInsets.Type.displayCutout());
-                v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-                return insets;
-            });
-            scroll.requestApplyInsets();
-        }
-        LinearLayout top = row();
-        TextView brand = label(R.string.app_name, 30, true);
-        brand.setTypeface(fontFor(brand.getText(), headline), Typeface.BOLD);
-        ((StableTextView) brand).reserveFor(alternateString(R.string.app_name), fontFor(alternateString(R.string.app_name), headline));
-        top.addView(brand, weight());
-        top.addView(icon(LineIcon.TODAY, R.string.go_today, () -> {
-            if (selected.equals(Dates.today()) && displayedMonth.equals(Dates.month(Dates.today()))) {
-                Toast.makeText(this, R.string.already_today, Toast.LENGTH_SHORT).show();
-                return;
-            }
-            selected = Dates.today(); today = selected; displayedMonth = Dates.month(selected); render();
-        }));
-        top.addView(icon(LineIcon.SETTINGS, R.string.settings, this::showSettings));
-        root.addView(top);
-        LinearLayout.LayoutParams mastheadRule = new LinearLayout.LayoutParams(-1, dp(4));
-        mastheadRule.setMargins(0, dp(12), 0, dp(12));
-        root.addView(rule(INK), mastheadRule);
+    private void loadTheme(){theme=ThemeConfig.read(preferences);serif=fonts.chinese(theme.font);display=fonts.latin(theme.font,false);headline=fonts.latin(theme.font,true);labelFont=fonts.label(theme.font);reading=fonts.reading(theme.font);}
+    private String heading(String value){return theme.is("caps","on")?value.toUpperCase(displayLocale):value;}
+    private void headingStyle(TextView view){float spacing=theme.is("tracking","spaced")?.09f:theme.is("tracking","tight")?-.035f:0;if(Build.VERSION.SDK_INT>=21)view.setLetterSpacing(spacing);else if(view instanceof StableTextView)((StableTextView)view).tracking(spacing);}
 
-        boolean wide = !preferences.getBoolean("desk",false) && getResources().getConfiguration().screenWidthDp >= 640 && getResources().getConfiguration().orientation == 2;
-        LinearLayout layout = wide ? row() : column();
-        layout.setGravity(Gravity.TOP);
-        root.addView(layout, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout identity = column();
-        dayNumber = text("", preferences.getBoolean("desk",false) ? 120 : wide ? 104 : 84, false);
-        dayNumber.setTypeface(headline);
-        dayNumber.setIncludeFontPadding(false);
-        dateTitle = stableText("", 16, false); dayTitle = stableText("", 21, false);
-        dateTitle.setTextColor(SECONDARY);
-        if (wide) {
-            identity.setPadding(0, dp(8), dp(12), 0);
-            identity.addView(dateTitle); identity.addView(dayNumber); identity.addView(dayTitle);
-            layout.addView(identity, new LinearLayout.LayoutParams(0, -2, 0.32f));
-            layout.addView(rule(RULE), new LinearLayout.LayoutParams(dp(1), -1));
-        } else {
-            LinearLayout hero = row(); hero.setPadding(0, dp(8), 0, dp(8));
-            hero.addView(dayNumber);
-            LinearLayout words = column(); words.setPadding(dp(18), 0, 0, 0);
-            words.addView(dateTitle); words.addView(dayTitle);
-            hero.addView(words, weight()); identity.addView(hero);
-            layout.addView(identity);
+    private void buildScreen() {
+        loadTheme();textScale=preferences.getBoolean("large",false)?1.18f:1f;
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        scroll.setVerticalScrollBarEnabled(false);scroll.setBackgroundColor(PAPER);
+        root=column();root.setPadding(dp(18),dp(12),dp(18),dp(18));scroll.addView(root);setContentView(scroll);
+        if(Build.VERSION.SDK_INT>=35){scroll.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets bars=insets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout());v.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});scroll.requestApplyInsets();}
+        LinearLayout top=row();StableTextView brand=label(R.string.app_name,theme.is("date","masthead")?28:26,true);
+        brand.setTypeface(headline);brand.setText(heading(getString(R.string.app_name)));brand.reserveFor(heading(alternateString(R.string.app_name)),headline);headingStyle(brand);top.addView(brand,weight());
+        top.addView(icon(LineIcon.TODAY,R.string.go_today,()->{
+            if(selected.equals(Dates.today())&&displayedMonth.equals(Dates.month(Dates.today()))){Toast.makeText(this,R.string.already_today,Toast.LENGTH_SHORT).show();return;}
+            selected=Dates.today();today=selected;displayedMonth=Dates.month(selected);render();
+        }));top.addView(icon(LineIcon.SETTINGS,R.string.settings,this::showSettings));root.addView(top);
+        addDivider(root,theme.ruleWidth(),12);
+        boolean desk=preferences.getBoolean("desk",false);
+        boolean wide=!desk&&getResources().getConfiguration().screenWidthDp>=640&&getResources().getConfiguration().orientation==2;
+        LinearLayout identity=buildIdentity(wide,desk);
+        deskDetails=stableText("",16,false);if(desk)identity.addView(deskDetails);
+        LinearLayout calendarPanel=new MonthSwipeLayout(this,this::moveMonth);calendarPanel.setVisibility(desk?View.GONE:View.VISIBLE);
+        LinearLayout nav=row();previous=icon(LineIcon.PREVIOUS,R.string.previous_month,()->moveMonth(-1));next=icon(LineIcon.NEXT,R.string.next_month,()->moveMonth(1));
+        monthTitle=stableText("",20,true);monthTitle.setGravity(Gravity.CENTER);monthTitle.setMinimumHeight(dp(48));monthTitle.setFocusable(true);monthTitle.setContentDescription(getString(R.string.jump_date));
+        monthTitle.setBackground(background(PAPER,0));monthTitle.setTextColor(interactiveText(PAPER,INK));
+        monthTitle.setOnClickListener(v->showDatePage(selected,chosen->{selected=chosen;displayedMonth=Dates.month(chosen);render();}));
+        nav.addView(previous,new LinearLayout.LayoutParams(dp(48),dp(48)));nav.addView(monthTitle,weight());nav.addView(next,new LinearLayout.LayoutParams(dp(48),dp(48)));calendarPanel.addView(nav);
+        monthGrid=column();calendarPanel.addView(monthGrid);calendarDetails=stableText("",12,false);calendarDetails.setMinLines(2);calendarDetails.setMaxLines(2);calendarDetails.setEllipsize(TextUtils.TruncateAt.END);calendarPanel.addView(calendarDetails);
+        milestonePanel=column();agenda=column();agenda.setPadding(0,dp(10),0,0);
+        LinearLayout agendaArea=column();addDivider(agendaArea,theme.ruleWidth(),12);agendaArea.addView(agenda);
+        if(wide&&!theme.is("flow","agenda-first")){
+            LinearLayout body=row();body.setGravity(Gravity.TOP);LinearLayout left=column();left.setPadding(0,0,dp(12),0);left.addView(identity);left.addView(milestonePanel);left.addView(agendaArea);
+            body.addView(left,new LinearLayout.LayoutParams(0,-2,.36f));calendarPanel.setPadding(dp(12),0,0,0);body.addView(calendarPanel,new LinearLayout.LayoutParams(0,-2,.64f));root.addView(body);
+        }else if(wide){
+            LinearLayout upper=row();upper.setGravity(Gravity.TOP);LinearLayout left=column();left.addView(identity);left.addView(milestonePanel);upper.addView(left,new LinearLayout.LayoutParams(0,-2,.4f));
+            LinearLayout.LayoutParams right=new LinearLayout.LayoutParams(0,-2,.6f);right.leftMargin=dp(18);upper.addView(agendaArea,right);root.addView(upper);root.addView(calendarPanel);
+        }else{
+            root.addView(identity);if(theme.is("flow","agenda-first")){root.addView(milestonePanel);root.addView(agendaArea);root.addView(calendarPanel);}else{root.addView(calendarPanel);root.addView(milestonePanel);root.addView(agendaArea);}
         }
-        deskDetails=stableText("",16,false);
-        if(preferences.getBoolean("desk",false))identity.addView(deskDetails);
-        LinearLayout calendarPanel = new MonthSwipeLayout(this, this::moveMonth);
-        if (wide) {
-            calendarPanel.setPadding(dp(12), 0, 0, 0);
-            layout.addView(calendarPanel, new LinearLayout.LayoutParams(0, -2, 0.68f));
-        }
-        else layout.addView(calendarPanel);
-        calendarPanel.setVisibility(preferences.getBoolean("desk",false) ? View.GONE : View.VISIBLE);
-        LinearLayout nav = row();
-        previous = icon(LineIcon.PREVIOUS, R.string.previous_month, () -> moveMonth(-1));
-        next = icon(LineIcon.NEXT, R.string.next_month, () -> moveMonth(1));
-        monthTitle = stableText("", 20, true); monthTitle.setGravity(Gravity.CENTER);
-        monthTitle.setMinimumHeight(dp(48)); monthTitle.setFocusable(true);
-        monthTitle.setContentDescription(getString(R.string.jump_date));
-        monthTitle.setBackground(background(PAPER,0));
-        monthTitle.setTextColor(interactiveText(PAPER,INK));
-        monthTitle.setOnClickListener(v -> showDatePage(selected, chosen -> {selected=chosen;displayedMonth=Dates.month(chosen);render();}));
-        nav.addView(previous, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        nav.addView(monthTitle, weight());
-        nav.addView(next, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        calendarPanel.addView(nav);
-        monthGrid = column(); calendarPanel.addView(monthGrid);
-        calendarDetails=stableText("",12,false);calendarDetails.setMinLines(2);calendarDetails.setMaxLines(2);
-        calendarDetails.setEllipsize(TextUtils.TruncateAt.END); calendarPanel.addView(calendarDetails);
-        milestonePanel=column();
-        (wide ? identity : root).addView(milestonePanel);
-        agenda = column();
-        agenda.setPadding(0, dp(10), 0, 0);
-        LinearLayout.LayoutParams agendaRule = new LinearLayout.LayoutParams(-1, dp(4));
-        agendaRule.setMargins(0, dp(16), 0, 0);
-        if (wide) { identity.addView(rule(INK), agendaRule); identity.addView(agenda); }
-        else { root.addView(rule(INK), agendaRule); root.addView(agenda); }
         render();
+    }
+    private void addDivider(LinearLayout parent,int width,int margin){LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,dp(width));bounds.setMargins(0,dp(margin),0,dp(margin));parent.addView(rule(INK),bounds);}
+    private FitDateView bigDate(int size){FitDateView view=new FitDateView(this);view.setTypeface(headline);view.setTextColor(INK);view.maximum(size*textScale);return view;}
+    private LinearLayout buildIdentity(boolean wide,boolean desk){
+        LinearLayout identity=column();identity.setPadding(0,dp(8),0,dp(16));
+        dayNumber=bigDate(desk?120:theme.is("date","masthead")?112:theme.is("date","center")?112:84);
+        dayNumber.setText(String.format(Locale.US,"%02d",Integer.parseInt(today.substring(8))));
+        dateTitle=stableText("",16,false);dayTitle=stableText("",21,false);headingStyle(dayTitle);
+        LinearLayout words=column();words.addView(dateTitle);words.addView(dayTitle);firstDigit=null;secondDigit=null;
+        if(theme.is("date","tiles")){
+            LinearLayout tiles=row();firstDigit=bigDate(82);secondDigit=bigDate(82);
+            for(TextView digit:new TextView[]{firstDigit,secondDigit}){digit.setGravity(Gravity.CENTER);digit.setBackground(shape(PAPER,2));LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(0,dp(116*textScale),1);bounds.setMargins(dp(3),0,dp(3),0);tiles.addView(digit,bounds);}
+            identity.addView(tiles);words.setPadding(0,dp(10),0,0);identity.addView(words);
+        }else if(theme.is("date","center")){
+            dayNumber.setGravity(Gravity.CENTER);dateTitle.setGravity(Gravity.CENTER);dayTitle.setGravity(Gravity.CENTER);identity.addView(dayNumber,new LinearLayout.LayoutParams(-1,-2));identity.addView(words);
+        }else if(wide&&!theme.is("date","reverse")){
+            words.removeView(dateTitle);identity.addView(dateTitle);identity.addView(dayNumber,new LinearLayout.LayoutParams(-1,-2));identity.addView(words);
+        }else{
+            LinearLayout hero=row();LinearLayout.LayoutParams digits=new LinearLayout.LayoutParams(0,-2,theme.is("date","masthead")?.54f:.46f),copy=new LinearLayout.LayoutParams(0,-2,theme.is("date","masthead")?.46f:.54f);
+            if(theme.is("date","reverse")){dayNumber.setGravity(Gravity.END);hero.addView(words,copy);hero.addView(dayNumber,digits);}else{copy.leftMargin=dp(12);hero.addView(dayNumber,digits);if(theme.is("date","masthead"))words.setBackground(bottomRule());hero.addView(words,copy);}identity.addView(hero);
+        }
+        return identity;
     }
     private void moveMonth(int by) {
         String target = Dates.addMonths(displayedMonth, by);
@@ -322,10 +309,11 @@ public final class MainActivity extends Activity {
     private void render() {
         if (monthGrid == null) return;
         dayNumber.setText(String.format(Locale.US, "%02d", Integer.parseInt(today.substring(8))));
+        if(firstDigit!=null){String value=String.format(Locale.US,"%02d",Integer.parseInt(today.substring(8)));firstDigit.setText(value.substring(0,1));secondDigit.setText(value.substring(1));}
         dateTitle.setText(monthLabel(today));
         ((StableTextView) dateTitle).reserveFor(alternateMonth(today), fontFor(alternateMonth(today), display));
-        dayTitle.setText(formatDate(today, "EEEE"));
-        String alternateDay = formatDate(today, "EEEE", alternateLocale());
+        dayTitle.setText(heading(formatDate(today, "EEEE")));
+        String alternateDay = heading(formatDate(today, "EEEE", alternateLocale()));
         ((StableTextView) dayTitle).reserveFor(alternateDay, fontFor(alternateDay, display));
         monthTitle.setText(monthLabel(displayedMonth));
         ((StableTextView) monthTitle).reserveFor(alternateMonth(displayedMonth), fontFor(alternateMonth(displayedMonth), labelFont));
@@ -350,19 +338,11 @@ public final class MainActivity extends Activity {
                     final String date = days[r * 7 + col];
                     String day = String.valueOf(Integer.parseInt(date.substring(8)));
                     boolean inMonth = Dates.month(date).equals(displayedMonth);
-                    LinearLayout cell = column(); cell.setGravity(Gravity.CENTER);
-                    TextView number = stableText(day + (marks.contains(date) ? "·" : ""), inMonth ? 22 : 18, date.equals(today));
-                    number.setGravity(Gravity.CENTER);
-                    TextView detail = stableText(dayAnnotation(date), 11, true); detail.setGravity(Gravity.CENTER);
-                    detail.setMaxLines(1);detail.setTag("almanac:"+date);
-                    int base = date.equals(selected) ? INK : PAPER;
-                    number.setTextColor(interactiveText(base,INK));detail.setTextColor(interactiveText(base,INK));
-                    number.setDuplicateParentStateEnabled(true);detail.setDuplicateParentStateEnabled(true);
                     float systemScale = Math.max(1f, getResources().getConfiguration().fontScale);
-                    cell.addView(number,new LinearLayout.LayoutParams(-1,-2));cell.addView(detail,new LinearLayout.LayoutParams(-1,dp(20 * textScale * systemScale)));
+                    CalendarDayView cell=new CalendarDayView(this,theme.component("calendar"),day,dayAnnotation(date),marks.contains(date),date.equals(today),date.equals(selected),false,textScale,display,labelFont,serif);
+                    if(!inMonth)cell.number.setTextSize(18*textScale);
+                    cell.detail.setTag("almanac:"+date);cell.marker.setTag("marker:"+date);
                     boolean valid = date.compareTo("1900-01-01") >= 0 && date.compareTo("2100-12-31") <= 0;
-                    cell.setBackground(background(base, date.equals(today) ? 2 : 0));
-                    cell.setSelected(date.equals(selected));
                     cell.setContentDescription(date + ", " + dateDetails(date) + (date.equals(today) ? ", " + getString(R.string.today) : "") + (date.equals(selected) ? ", " + getString(R.string.selected) : "") + (marks.contains(date) ? ", " + getString(R.string.has_events) : ""));
                     cell.setFocusable(valid); cell.setClickable(valid);
                     cell.setTag(date);
@@ -375,11 +355,11 @@ public final class MainActivity extends Activity {
                             if (focusedDate != null) focusedDate.requestFocus();
                         }
                     });
-                    LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, dp((textScale > 1 ? 66 : 56) * systemScale), 1);
+                    LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, dp(70*textScale*systemScale), 1);
                     cp.setMargins(dp(1), dp(1), dp(1), dp(1)); week.addView(cell, cp);
                 }
                 monthGrid.addView(week);
-                monthGrid.addView(rule(RULE), new LinearLayout.LayoutParams(-1, dp(1)));
+                if(theme.is("calendar","ruled"))monthGrid.addView(rule(RULE),new LinearLayout.LayoutParams(-1,dp(1)));
             }
             boolean desk=preferences.getBoolean("desk",false);
             boolean upcoming = desk || selected.equals(today);
@@ -389,7 +369,7 @@ public final class MainActivity extends Activity {
                 : formatDate(selected, alternateLocale().equals(Locale.US) ? "MMM d" : "M月d日", alternateLocale());
             ((StableTextView) title).reserveFor(alternateHeading, fontFor(alternateHeading, labelFont));
             title.setTextColor(ACCENT);
-            if (Build.VERSION.SDK_INT >= 21) title.setLetterSpacing(0.09f);
+            title.setText(heading(title.getText().toString()));headingStyle(title);
             agendaHeader.addView(title, weight());
             agendaHeader.addView(icon(LineIcon.LIST, R.string.future_events, this::showFuture));
             agendaHeader.addView(icon(LineIcon.ADD, R.string.add_event, () -> showEditor(0, selected, "", "")));
@@ -424,7 +404,7 @@ public final class MainActivity extends Activity {
         fieldLabel(form, R.string.event_title);
         titleInput = input(title, R.string.event_hint);
         titleInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        titleInput.setTypeface(serif); titleInput.setMinLines(3); titleInput.setGravity(Gravity.TOP | Gravity.START);
+        titleInput.setTypeface(reading); titleInput.setMinLines(3); titleInput.setGravity(Gravity.TOP | Gravity.START);
         titleInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
         titleInput.setContentDescription(getString(R.string.event_title)); form.addView(titleInput);
         fieldLabel(form, R.string.time_optional);
@@ -497,16 +477,14 @@ public final class MainActivity extends Activity {
                 LinearLayout week = row();
                 for (int c = 0; c < 7; c++) {
                     String key = days[r * 7 + c]; boolean chosen = key.equals(value.getText().toString());
-                    TextView cell = text(String.valueOf(Integer.parseInt(key.substring(8))), Dates.month(key).equals(month[0]) ? 20 : 16, chosen);
-                    cell.setIncludeFontPadding(false); cell.setGravity(Gravity.CENTER);
-                    cell.setTextColor(interactiveText(chosen ? INK : PAPER, INK)); cell.setBackground(background(chosen ? INK : PAPER, key.equals(today) ? 1 : 0));
+                    CalendarDayView cell=new CalendarDayView(this,theme.component("calendar"),String.valueOf(Integer.parseInt(key.substring(8))),"",false,key.equals(today),chosen,true,textScale,display,labelFont,serif);
                     cell.setContentDescription(key + (chosen ? ", " + getString(R.string.selected) : "")); cell.setSelected(chosen);
                     boolean valid = key.compareTo("1900-01-01") >= 0 && key.compareTo("2100-12-31") <= 0;
                     cell.setEnabled(valid); cell.setFocusable(valid);
                     if (valid) cell.setOnClickListener(v -> { hideKeyboard(value); value.setText(key); });
-                    week.addView(cell, new LinearLayout.LayoutParams(0, dp(48 * Math.max(textScale, getResources().getConfiguration().fontScale)), 1));
+                    week.addView(cell, new LinearLayout.LayoutParams(0, dp(54*textScale*Math.max(1f,getResources().getConfiguration().fontScale)), 1));
                 }
-                calendar.addView(week); calendar.addView(rule(INK), new LinearLayout.LayoutParams(-1, dp(1)));
+                calendar.addView(week);if(theme.is("calendar","ruled"))calendar.addView(rule(INK),new LinearLayout.LayoutParams(-1,dp(1)));
             }
         };
         value.addTextChangedListener(new TextWatcher() {
@@ -532,17 +510,18 @@ public final class MainActivity extends Activity {
     private LinearLayout pageForm(int title) {
         LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20)); form.setBackgroundColor(PAPER);
         form.setFocusableInTouchMode(true);
-        LinearLayout header = row(); header.addView(label(title, 26, true), weight()); form.addView(header);
-        LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(4)); divider.setMargins(0, dp(12), 0, dp(8)); form.addView(rule(INK), divider);
+        LinearLayout header = row();StableTextView caption=label(title,24,true);caption.setText(heading(caption.getText().toString()));headingStyle(caption);header.addView(caption,weight());form.addView(header);
+        LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(theme.ruleWidth())); divider.setMargins(0, dp(12), 0, dp(8)); form.addView(rule(INK), divider);
         return form;
     }
     private void fieldLabel(LinearLayout form, int id) {
         TextView field = label(id, 15, false); field.setPadding(0, dp(16), 0, dp(8)); form.addView(field);
     }
     private EditText input(String value, int hint) {
-        EditText field = new EditText(this); field.setTextSize(20 * textScale); field.setTypeface(serif);
+        EditText field = new ThemeEditText(this,serif); field.setTextSize(20 * textScale); field.setTypeface(display);
         field.setTextColor(INK); field.setHintTextColor(INK); field.setIncludeFontPadding(false);
-        field.setBackgroundResource(R.drawable.ink_input); field.setPadding(dp(12), dp(10), dp(12), dp(10));
+        if("minimal".equals(theme.style)||"editorial".equals(theme.style))field.setBackground(bottomRule());else field.setBackgroundResource(R.drawable.ink_input);
+        field.setPadding(dp(12), dp(10), dp(12), dp(10));
         field.setMinimumHeight(dp(48)); field.setText(value); if (hint != 0) field.setHint(hint);
         return field;
     }
@@ -585,10 +564,15 @@ public final class MainActivity extends Activity {
         settingsDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20));
         form.setBackgroundColor(PAPER);
-        TextView heading = label(R.string.settings, 26, true);
-        form.addView(heading);
+        LinearLayout settingsHeader=row();settingsHeader.addView(label(R.string.settings,24,true),weight());form.addView(settingsHeader);
+        ThemeConfig pendingTheme=restoredSettings==null?new ThemeConfig(theme):ThemeConfig.fromBundle(restoredSettings,"settingsTheme.");settingsThemeDraft=pendingTheme;
+        Button appearance=button(getString(R.string.appearance)+" · "+getString(pendingTheme.label()),()->{});
+        appearance.setContentDescription(getString(R.string.appearance));
+        settingsThemeChanged=()->appearance.setText(ThemeFonts.mixed(getString(R.string.appearance)+" · "+getString(pendingTheme.label()),serif,false));
+        appearance.setOnClickListener(v->showAppearance(pendingTheme,settingsThemeChanged));
         LinearLayout.LayoutParams divider = new LinearLayout.LayoutParams(-1, dp(4));
         divider.setMargins(0, dp(12), 0, dp(12)); form.addView(rule(INK), divider);
+        LinearLayout.LayoutParams appearanceBounds=new LinearLayout.LayoutParams(-1,-2);appearanceBounds.bottomMargin=dp(12);form.addView(appearance,appearanceBounds);
         CheckBox awake = check(R.string.keep_awake, preferences.getBoolean("awake", true));
         CheckBox full = check(R.string.full_screen, preferences.getBoolean("full", true));
         CheckBox large = check(R.string.large_text, preferences.getBoolean("large", false));
@@ -598,6 +582,8 @@ public final class MainActivity extends Activity {
         CheckBox holidays=check(R.string.show_holidays,preferences.getBoolean("holidays",true));
         CheckBox hideDone=check(R.string.hide_completed,preferences.getBoolean("hide_done",false));
         CheckBox desk=check(R.string.display_mode,preferences.getBoolean("desk",false));
+        String[] settingKeys={"awake","full","large","lunar","terms","holidays","hide_done","desk"};CheckBox[] settingViews={awake,full,large,lunar,terms,holidays,hideDone,desk};
+        for(int i=0;i<settingKeys.length;i++){settingViews[i].setTag("setting:"+settingKeys[i]);if(restoredSettings!=null)settingViews[i].setChecked(restoredSettings.getBoolean("settings."+settingKeys[i],settingViews[i].isChecked()));}
         form.addView(lunar);form.addView(terms);form.addView(holidays);form.addView(hideDone);form.addView(desk);
         TextView deskNote=label(R.string.display_note,13,false);deskNote.setPadding(0,dp(8),0,dp(8));form.addView(deskNote);
         TextView holidayNote=label(R.string.holiday_note,13,false);form.addView(holidayNote);
@@ -607,23 +593,76 @@ public final class MainActivity extends Activity {
         RadioButton chinese = new RadioButton(this); chinese.setId(View.generateViewId()); chinese.setText("简体中文"); chinese.setMinHeight(dp(48));
         RadioButton english = new RadioButton(this); english.setId(View.generateViewId()); english.setText("English"); english.setMinHeight(dp(48));
         styleChoice(chinese, true); styleChoice(english, true);
-        languages.addView(chinese); languages.addView(english);
-        languages.check(displayLocale.equals(Locale.US) ? english.getId() : chinese.getId()); form.addView(languages);
+        languages.setTag("setting:language");chinese.setTag("zh");english.setTag("en");languages.addView(chinese); languages.addView(english);
+        languages.check((restoredSettings==null?displayLocale.equals(Locale.US):"en".equals(restoredSettings.getString("settings.language"))) ? english.getId() : chinese.getId());form.addView(languages);
         TextView note = label(R.string.settings_note, 14, false);
         note.setPadding(0, dp(12), 0, 0); note.setLineSpacing(dp(5), 1); form.addView(note);
-        LinearLayout actions = row(); actions.setPadding(0, dp(20), 0, 0);
-        actions.addView(button(getString(R.string.cancel), () -> settingsDialog.dismiss()), weight());
-        LinearLayout.LayoutParams saveBounds = weight(); saveBounds.leftMargin = dp(12);
-        actions.addView(button(getString(R.string.save), () -> {
-                preferences.edit().putBoolean("awake", awake.isChecked()).putBoolean("full", full.isChecked()).putBoolean("large", large.isChecked())
-                    .putBoolean("lunar",lunar.isChecked()).putBoolean("terms",terms.isChecked()).putBoolean("holidays",holidays.isChecked())
-                    .putBoolean("hide_done",hideDone.isChecked()).putBoolean("desk",desk.isChecked())
-                    .putString("language", languages.getCheckedRadioButtonId() == english.getId() ? "en" : "zh").apply();
-                settingsDialog.dismiss();
-                applyLanguage(); buildScreen(); applyDisplay();
-            }), saveBounds);
-        form.addView(actions);
+        settingsHeader.addView(icon(LineIcon.CANCEL,R.string.cancel,()->settingsDialog.dismiss()));
+        settingsHeader.addView(icon(LineIcon.SAVE,R.string.save,()->{
+            SharedPreferences.Editor edit=preferences.edit().putBoolean("awake",awake.isChecked()).putBoolean("full",full.isChecked()).putBoolean("large",large.isChecked())
+                .putBoolean("lunar",lunar.isChecked()).putBoolean("terms",terms.isChecked()).putBoolean("holidays",holidays.isChecked())
+                .putBoolean("hide_done",hideDone.isChecked()).putBoolean("desk",desk.isChecked())
+                .putString("language",languages.getCheckedRadioButtonId()==english.getId()?"en":"zh");
+            pendingTheme.save(edit);edit.apply();settingsDialog.dismiss();applyLanguage();buildScreen();applyDisplay();
+        }));
         showPage(settingsDialog,form);
+    }
+    private void settingActions(LinearLayout form,Runnable cancel,Runnable save){LinearLayout head=(LinearLayout)form.getChildAt(0);head.addView(icon(LineIcon.CANCEL,R.string.cancel,cancel));head.addView(icon(LineIcon.SAVE,R.string.save,save));}
+    private void themeSection(LinearLayout form,int title){TextView label=label(title,17,true);label.setPadding(0,dp(20),0,dp(8));form.addView(label);}
+    private void showAppearance(ThemeConfig destination,Runnable changed){
+        ThemeConfig draft=restoredSettings==null?new ThemeConfig(destination):ThemeConfig.fromBundle(restoredSettings,"appearanceTheme.");appearanceThemeDraft=draft;
+        appearanceDialog=new Dialog(this);appearanceDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form=pageForm(R.string.appearance);
+        settingActions(form,()->appearanceDialog.dismiss(),()->{destination.font=draft.font;destination.style=draft.style;destination.overrides.clear();destination.overrides.putAll(draft.overrides);changed.run();appearanceDialog.dismiss();});
+        themeSection(form,R.string.theme_style);LinearLayout gallery=column();form.addView(gallery);
+        final Runnable[] update={null};
+        update[0]=()->{
+            gallery.removeAllViews();
+            for(int i=0;i<ThemeConfig.STYLES.length;i+=2){LinearLayout row=row();row.setGravity(Gravity.TOP);
+                for(int j=i;j<Math.min(i+2,ThemeConfig.STYLES.length);j++){
+                    final String id=ThemeConfig.STYLES[j];ThemeConfig sample=new ThemeConfig(draft);if(!draft.style.equals(id))sample.chooseStyle(id);
+                    String title=getString(ThemeConfig.STYLE_LABELS[j])+(draft.style.equals(id)&&!draft.overrides.isEmpty()?" · "+getString(R.string.theme_custom):"");
+                    row.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);update[0].run();}),cardBounds());
+                }gallery.addView(row);
+            }
+        };update[0].run();appearanceChanged=update[0];
+        themeSection(form,R.string.theme_font);form.addView(label(R.string.theme_font_note,13,false));
+        RadioGroup choices=new RadioGroup(this);
+        for(int i=0;i<ThemeConfig.FONTS.length;i++){
+            final String id=ThemeConfig.FONTS[i];RadioButton option=new RadioButton(this);option.setId(View.generateViewId());option.setTag(id);
+            option.setText(ThemeConfig.FONT_NAMES[i]+"\nInk Calendar · 墨日历 0123456789");styleChoice(option,true);
+            option.setTypeface(fonts.latin(id,false));option.setTextSize(16*textScale);option.setText(ThemeFonts.mixed(option.getText(),fonts.chinese(id),false));option.setPadding(0,dp(10),0,dp(10));
+            option.setContentDescription(ThemeConfig.FONT_NAMES[i]);choices.addView(option);
+        }
+        choices.check(choices.findViewWithTag(draft.font).getId());choices.setOnCheckedChangeListener((group,id)->draft.font=(String)group.findViewById(id).getTag());form.addView(choices);
+        form.addView(button(getString(R.string.theme_components),()->showComponents(draft,update[0])));
+        showPage(appearanceDialog,form);
+    }
+    private LinearLayout.LayoutParams cardBounds(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(dp(3),dp(4),dp(3),dp(4));return p;}
+    private View themeCard(ThemeConfig value,String component,String title,boolean chosen,Runnable action){
+        LinearLayout card=column();card.setPadding(dp(6),dp(6),dp(6),dp(6));StateListDrawable border=new StateListDrawable();border.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));border.addState(new int[]{android.R.attr.state_pressed},shape(PAPER,3));border.addState(new int[]{},shape(PAPER,chosen?2:1));card.setBackground(border);card.setFocusable(true);card.setSelected(chosen);
+        ThemePreview preview=new ThemePreview(this,value,component);card.addView(preview,new LinearLayout.LayoutParams(-1,dp(86)));
+        RadioButton caption=new RadioButton(this);caption.setText(title);styleChoice(caption,true);caption.setTextSize(14*textScale);caption.setChecked(chosen);caption.setClickable(false);caption.setFocusable(false);caption.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);card.addView(caption);
+        card.setContentDescription(title+(chosen?", "+getString(R.string.selected):""));card.setOnClickListener(v->action.run());return card;
+    }
+    private void showComponents(ThemeConfig destination,Runnable changed){
+        ThemeConfig draft=restoredSettings==null?new ThemeConfig(destination):ThemeConfig.fromBundle(restoredSettings,"componentTheme.");componentThemeDraft=draft;componentDialog=new Dialog(this);componentDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout form=pageForm(R.string.theme_components),sections=column();
+        settingActions(form,()->componentDialog.dismiss(),()->{destination.overrides.clear();destination.overrides.putAll(draft.overrides);changed.run();componentDialog.dismiss();});
+        final Runnable[] update={null};update[0]=()->{
+            sections.removeAllViews();
+            for(int i=0;i<ThemeConfig.KEYS.length;i++){
+                final String key=ThemeConfig.KEYS[i];themeSection(sections,ThemeConfig.KEY_LABELS[i]);
+                for(int j=0;j<ThemeConfig.OPTIONS[i].length;j+=2){LinearLayout row=row();row.setGravity(Gravity.TOP);
+                    for(int k=j;k<Math.min(j+2,ThemeConfig.OPTIONS[i].length);k++){
+                        final String value=ThemeConfig.OPTIONS[i][k];ThemeConfig sample=new ThemeConfig(draft);sample.choose(key,value);
+                        row.addView(themeCard(sample,key,getString(ThemeConfig.OPTION_LABELS[i][k]),draft.is(key,value),()->{draft.choose(key,value);update[0].run();}),cardBounds());
+                    }
+                    if(row.getChildCount()==1)row.addView(new View(this),cardBounds());sections.addView(row);
+                }
+            }
+        };
+        form.addView(button(getString(R.string.theme_reset),()->{draft.overrides.clear();update[0].run();}));form.addView(sections);update[0].run();showPage(componentDialog,form);
     }
     private Runnable refreshFuture, refreshMilestones;
     private boolean english() { return displayLocale.equals(Locale.US); }
@@ -665,25 +704,29 @@ public final class MainActivity extends Activity {
         return result;
     }
     private void addEventRow(LinearLayout parent,Event event,boolean dateShown,Runnable changed) {
-        LinearLayout item=row();
-        CheckBox done=check("",event.completed);
-        done.setContentDescription(getString(event.completed?R.string.mark_incomplete:R.string.mark_complete)+": "+event.title);
-        done.setOnCheckedChangeListener((button,checked) -> {
-            try {store.complete(event.id,checked);changed.run();}
-            catch(RuntimeException e) {done.setOnCheckedChangeListener(null);done.setChecked(event.completed);toast(getString(R.string.save_failed));}
-        });
-        item.addView(done,new LinearLayout.LayoutParams(dp(48),dp(48)));
+        LinearLayout item=row();item.setGravity(Gravity.TOP);
+        CheckBox done=check("",event.completed);done.setContentDescription(getString(event.completed?R.string.mark_incomplete:R.string.mark_complete)+": "+event.title);
+        done.setOnCheckedChangeListener((button,checked)->{
+            try{store.complete(event.id,checked);changed.run();}
+            catch(RuntimeException e){done.setOnCheckedChangeListener(null);done.setChecked(event.completed);toast(getString(R.string.save_failed));}
+        });item.addView(done,new LinearLayout.LayoutParams(dp(48),dp(48)));
         String when=(dateShown?(event.date.equals(today)?getString(R.string.today):shortDate(event.date))+"  ":"")+(event.time.isEmpty()?getString(R.string.all_day):event.time);
-        LinearLayout body=column();body.setPadding(dp(4),dp(10),dp(4),dp(10));
-        TextView meta=text(when+(event.completed?" · "+getString(R.string.completed):""),13,false);
-        TextView content=text(event.title,20,false);content.setTypeface(fontFor(event.title,reading));content.setLineSpacing(0,1.2f);
+        boolean horizontal=theme.is("agenda","timeline")||theme.is("agenda","ledger");
+        LinearLayout body=horizontal?row():column();body.setGravity(Gravity.TOP);body.setPadding(dp(8),dp(10),dp(8),dp(10));
+        TextView meta=stableText(when+(event.completed?" · "+getString(R.string.completed):""),12,false);
+        ((StableTextView)meta).reserveFor((dateShown?formatDate(event.date,alternateLocale().equals(Locale.US)?"MMM d":"M月d日",alternateLocale())+"  ":"")+(event.time.isEmpty()?alternateString(R.string.all_day):event.time),display);
+        TextView content=text(event.title,20,false);content.setTypeface(reading);content.setLineSpacing(0,1.2f);
         if(event.completed)content.setPaintFlags(content.getPaintFlags()|Paint.STRIKE_THRU_TEXT_FLAG);
-        meta.setTextColor(interactiveText(PAPER,INK));content.setTextColor(interactiveText(PAPER,INK));
-        meta.setDuplicateParentStateEnabled(true);content.setDuplicateParentStateEnabled(true);
-        body.addView(meta);body.addView(content);body.setBackground(background(PAPER,0));body.setMinimumHeight(dp(64));body.setFocusable(true);
-        body.setContentDescription(when+", "+event.title+", "+getString(R.string.edit_event));
-        body.setOnClickListener(v -> showEditor(event.id,event.date,event.title,event.time));
-        item.addView(body,weight());parent.addView(item);parent.addView(rule(INK),new LinearLayout.LayoutParams(-1,dp(1)));
+        meta.setTextColor(interactiveText(PAPER,INK));content.setTextColor(interactiveText(PAPER,INK));meta.setDuplicateParentStateEnabled(true);content.setDuplicateParentStateEnabled(true);
+        if(horizontal){
+            LinearLayout.LayoutParams time=new LinearLayout.LayoutParams(0,-2,.3f),title=new LinearLayout.LayoutParams(0,-2,.7f);
+            if(theme.is("agenda","ledger")){meta.setGravity(Gravity.END);title.rightMargin=dp(8);body.addView(content,title);body.addView(meta,time);}
+            else{title.leftMargin=dp(10);body.addView(meta,time);body.addView(content,title);}
+        }else{body.addView(meta);body.addView(content);}
+        body.setBackground(background(PAPER,theme.is("agenda","cards")?1:0));body.setMinimumHeight(dp(64));body.setFocusable(true);
+        body.setContentDescription(when+", "+event.title+", "+getString(R.string.edit_event));body.setOnClickListener(v->showEditor(event.id,event.date,event.title,event.time));
+        item.addView(body,weight());LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,-2);bounds.bottomMargin=dp(theme.is("agenda","cards")?8:0);parent.addView(item,bounds);
+        if(theme.is("agenda","stacked")||theme.is("agenda","ledger")){View line=rule(INK);if(theme.is("agenda","ledger"))line.setBackground(new InkRule(getResources().getDisplayMetrics().density,true,false));parent.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));}
     }
     private void refreshOpenLists() {
         if(futureDialog!=null && futureDialog.isShowing() && refreshFuture!=null)refreshFuture.run();
@@ -806,6 +849,7 @@ public final class MainActivity extends Activity {
 
     private CheckBox check(int title, boolean checked) {
         StableCheckBox box=new StableCheckBox(this);box.setText(getString(title));styleChoice(box,false);box.setChecked(checked);
+        box.useChinese(serif);
         String alternate=alternateString(title);box.reserveFor(alternate,fontFor(alternate,display));return box;
     }
     private CheckBox check(String title, boolean checked) {
@@ -817,7 +861,7 @@ public final class MainActivity extends Activity {
         choice.setTextColor(INK); choice.setTextSize(18 * textScale);
         choice.setTypeface(fontFor(choice.getText(), display));
         choice.setIncludeFontPadding(false);
-        choice.setText(StableTextView.uniformLines(choice.getText(), choice));
+        choice.setText(StableTextView.uniformLines(ThemeFonts.mixed(choice.getText(),serif,false), choice));
         StateListDrawable states = new StateListDrawable();
         states.addState(new int[]{android.R.attr.state_focused}, shape(PAPER, 2));
         states.addState(new int[]{}, shape(PAPER, 0));
@@ -828,15 +872,15 @@ public final class MainActivity extends Activity {
     private LinearLayout row() { LinearLayout v = new LinearLayout(this); v.setOrientation(LinearLayout.HORIZONTAL); v.setGravity(Gravity.CENTER_VERTICAL); return v; }
     private LinearLayout.LayoutParams weight() { return new LinearLayout.LayoutParams(0, -2, 1); }
     private TextView text(String value, int size, boolean bold) {
-        TextView view = new TextView(this); view.setText(value); view.setTextColor(INK); view.setTextSize(size * textScale);
+        TextView view = new TextView(this); view.setText(ThemeFonts.mixed(value,serif,bold)); view.setTextColor(INK); view.setTextSize(size * textScale);
         Typeface face = fontFor(value.isEmpty() ? (displayLocale.equals(Locale.US) ? "A" : "中") : value, bold ? labelFont : display);
-        view.setTypeface(face, face == serif && bold ? Typeface.BOLD : Typeface.NORMAL); return view;
+        view.setTypeface(face); return view;
     }
     private StableTextView stableText(String value, int size, boolean bold) {
         StableTextView view = new StableTextView(this);
         view.setTextSize(size * textScale); view.setTextColor(INK); view.setGravity(Gravity.CENTER_VERTICAL);
         Typeface face = fontFor(value.isEmpty() ? (displayLocale.equals(Locale.US) ? "A" : "中") : value, bold ? labelFont : display);
-        view.setTypeface(face, face == serif && bold ? Typeface.BOLD : Typeface.NORMAL);
+        view.setTypeface(face);view.useChinese(serif,bold);
         view.setText(value); return view;
     }
     private StableTextView label(int id, int size, boolean bold) {
@@ -848,7 +892,7 @@ public final class MainActivity extends Activity {
     private Button button(String value, Runnable action) {
         Button b = new Button(this); b.setText(value); b.setTextColor(Color.BLACK); b.setTextSize(16 * textScale);
         b.setTypeface(fontFor(value, display));
-        b.setIncludeFontPadding(false); b.setText(StableTextView.uniformLines(value, b));
+        b.setIncludeFontPadding(false); b.setText(StableTextView.uniformLines(ThemeFonts.mixed(value,serif,false), b));
         b.setTextColor(interactiveText(PAPER, INK));
         b.setAllCaps(false); b.setMinimumWidth(dp(48)); b.setMinWidth(dp(48)); b.setMinimumHeight(dp(48)); b.setMinHeight(dp(48));
         b.setPadding(dp(10), dp(4), dp(10), dp(4)); b.setBackground(background(PAPER, 1));
@@ -856,11 +900,12 @@ public final class MainActivity extends Activity {
     }
     private ImageButton icon(int kind, int label, Runnable action) {
         ImageButton button = new ImageButton(this);
-        button.setImageDrawable(new LineIcon(kind, getResources().getDisplayMetrics().density));
+        boolean solid=theme.is("buttons","solid");
+        button.setImageDrawable(new LineIcon(kind, getResources().getDisplayMetrics().density,solid));
         button.setPadding(dp(12), dp(12), dp(12), dp(12));
         LinearLayout.LayoutParams bounds = new LinearLayout.LayoutParams(dp(48), dp(48));
         bounds.leftMargin = dp(8); button.setLayoutParams(bounds);
-        button.setBackground(background(PAPER, 1));
+        button.setBackground(background(solid?INK:PAPER,theme.is("buttons","bare")?0:1));
         button.setContentDescription(getString(label));
         button.setOnClickListener(v -> action.run());
         button.setOnLongClickListener(v -> { toast(getString(label)); return true; });
@@ -887,10 +932,10 @@ public final class MainActivity extends Activity {
             new int[]{PAPER, background == INK ? PAPER : normal});
     }
     private Typeface fontFor(CharSequence value, Typeface latin) {
-        // The Latin families do not include CJK. Keep Chinese text legible on API 19.
-        for (int i = 0; i < value.length(); i++) if (value.charAt(i) >= 0x2e80) return serif;
+        // Chinese spans select the paired font per run, including mixed-language event titles.
         return latin;
     }
+    private android.graphics.drawable.Drawable bottomRule(){return new InkRule(getResources().getDisplayMetrics().density,false,true);}
     private GradientDrawable shape(int color, int border) {
         GradientDrawable d = new GradientDrawable(); d.setColor(color);
         if (border > 0) d.setStroke(dp(border), INK); return d;

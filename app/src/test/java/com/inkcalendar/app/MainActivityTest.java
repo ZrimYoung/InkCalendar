@@ -36,7 +36,7 @@ public class MainActivityTest {
     private View main(){return activity.getWindow().getDecorView();}
     private View dialog(){List<Dialog> dialogs=ShadowDialog.getShownDialogs();for(int i=dialogs.size()-1;i>=0;i--)if(dialogs.get(i).isShowing())return dialogs.get(i).getWindow().getDecorView();throw new AssertionError("No open dialog");}
     private List<View> all(View root){List<View> result=new ArrayList<>();result.add(root);if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++)result.addAll(all(((ViewGroup)root).getChildAt(i)));return result;}
-    private View label(View root,String label){for(View v:all(root))if(v instanceof TextView && label.contentEquals(((TextView)v).getText()))return v;throw new AssertionError("Missing text: "+label);}
+    private View label(View root,String label){for(View v:all(root))if(v instanceof TextView && label.contentEquals(((TextView)v).getText()))return v;for(View v:all(root))if(label.contentEquals(v.getContentDescription()==null?"":v.getContentDescription()))return v;throw new AssertionError("Missing text or action: "+label);}
     private View description(View root,String label){for(View v:all(root))if(label.contentEquals(v.getContentDescription()==null?"":v.getContentDescription()))return v;throw new AssertionError("Missing description: "+label);}
     private void click(View root,String label){View view=label(root,label);while(!view.isClickable() && view.getParent() instanceof View)view=(View)view.getParent();assertTrue("Not clickable: "+label,view.isClickable());view.performClick();}
     private <T> T field(String name)throws Exception{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return (T)f.get(activity);}

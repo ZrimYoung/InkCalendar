@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
 public class LayoutTest {
     private List<View> all(View root){List<View> out=new ArrayList<>();out.add(root);if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++)out.addAll(all(((ViewGroup)root).getChildAt(i)));return out;}
     private View desc(View root,String text){for(View v:all(root))if(text.contentEquals(v.getContentDescription()==null?"":v.getContentDescription()))return v;throw new AssertionError(text);}
-    private View label(View root,String text){for(View v:all(root))if(v instanceof TextView && text.contentEquals(((TextView)v).getText()))return v;throw new AssertionError(text);}
+    private View label(View root,String text){for(View v:all(root))if(v instanceof TextView && text.contentEquals(((TextView)v).getText()))return v;return desc(root,text);}
     private View root(MainActivity a)throws Exception{Field f=MainActivity.class.getDeclaredField("root");f.setAccessible(true);return (View)f.get(a);}
     private int top(View view,View root){int y=0;while(view!=root){y+=view.getTop();view=(View)view.getParent();}return y;}
     private void layout(View root,int width){root.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));root.layout(0,0,width,root.getMeasuredHeight());}

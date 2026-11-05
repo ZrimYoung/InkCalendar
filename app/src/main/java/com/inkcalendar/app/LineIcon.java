@@ -10,12 +10,15 @@ import android.graphics.drawable.Drawable;
 
 /** Small line icons drawn without vector drawable or font-glyph dependencies. */
 final class LineIcon extends Drawable {
-    static final int PREVIOUS = 0, NEXT = 1, TODAY = 2, ADD = 3, SETTINGS = 4, DELETE = 5, LIST = 6, MILESTONE = 7;
+    static final int PREVIOUS = 0, NEXT = 1, TODAY = 2, ADD = 3, SETTINGS = 4, DELETE = 5, LIST = 6, MILESTONE = 7, CANCEL = 8, SAVE = 9;
     private final int kind, size;
+    private final boolean inverse;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    LineIcon(int kind, float density) {
+    LineIcon(int kind, float density) { this(kind,density,false); }
+    LineIcon(int kind, float density, boolean inverse) {
+        this.inverse=inverse;
         this.kind = kind; this.size = (int) (24 * density + 0.5f);
-        paint.setColor(Color.BLACK); paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(inverse?Color.WHITE:Color.BLACK); paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1.6f); paint.setStrokeCap(Paint.Cap.ROUND); paint.setStrokeJoin(Paint.Join.ROUND);
     }
     @Override public void draw(Canvas canvas) {
@@ -25,6 +28,10 @@ final class LineIcon extends Drawable {
         if (kind == PREVIOUS || kind == NEXT) {
             float a = kind == PREVIOUS ? 14 : 10, b = kind == PREVIOUS ? 9 : 15;
             canvas.drawLine(a, 6, b, 12, paint); canvas.drawLine(b, 12, a, 18, paint);
+        } else if (kind == CANCEL) {
+            canvas.drawLine(6,6,18,18,paint);canvas.drawLine(18,6,6,18,paint);
+        } else if (kind == SAVE) {
+            canvas.drawLine(4,12,10,18,paint);canvas.drawLine(10,18,21,5,paint);
         } else if (kind == ADD) {
             canvas.drawLine(5, 12, 19, 12, paint); canvas.drawLine(12, 5, 12, 19, paint);
         } else if (kind == TODAY) {
@@ -52,7 +59,7 @@ final class LineIcon extends Drawable {
     @Override protected boolean onStateChange(int[] state) {
         boolean pressed = false;
         for (int value : state) if (value == android.R.attr.state_pressed) pressed = true;
-        int color = pressed ? Color.WHITE : Color.BLACK;
+        int color = pressed||inverse ? Color.WHITE : Color.BLACK;
         if (paint.getColor() == color) return false;
         paint.setColor(color); invalidateSelf(); return true;
     }

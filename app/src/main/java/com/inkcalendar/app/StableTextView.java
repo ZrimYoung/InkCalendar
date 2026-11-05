@@ -17,15 +17,21 @@ import android.widget.TextView;
 final class StableTextView extends TextView {
     private String alternate = "";
     private Typeface alternateFont;
+    private Typeface chinese;
+    private boolean chineseBold;
+    private float tracking;
 
     StableTextView(Context context) { super(context); setIncludeFontPadding(false); }
+
+    void useChinese(Typeface face, boolean bold) { chinese=face;chineseBold=bold;setText(getText()); }
+    void tracking(float em){tracking=em;setText(getText());requestLayout();}
 
     void reserveFor(String text, Typeface font) {
         alternate = text; alternateFont = font; requestLayout();
     }
 
     @Override public void setText(CharSequence text, BufferType type) {
-        super.setText(uniformLines(text, this), type);
+        super.setText(uniformLines(TextTracking.apply(ThemeFonts.mixed(text,chinese,chineseBold),tracking), this), type);
     }
 
     static CharSequence uniformLines(CharSequence text, TextView owner) {
@@ -49,7 +55,7 @@ final class StableTextView extends TextView {
         if (width <= 0) return;
         TextPaint paint = new TextPaint(getPaint());
         if (alternateFont != null) paint.setTypeface(alternateFont);
-        StaticLayout layout = new StaticLayout(uniformLines(alternate, this), paint, width,
+        StaticLayout layout = new StaticLayout(uniformLines(TextTracking.apply(ThemeFonts.mixed(alternate,chinese,chineseBold),tracking), this), paint, width,
             Layout.Alignment.ALIGN_NORMAL, getLineSpacingMultiplier(), getLineSpacingExtra(), false);
         int height = Math.max(getMeasuredHeight(), layout.getHeight() + getCompoundPaddingTop() + getCompoundPaddingBottom());
         setMeasuredDimension(getMeasuredWidth(), resolveSize(height, heightSpec));

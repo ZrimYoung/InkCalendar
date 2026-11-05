@@ -74,4 +74,46 @@
     <plurals name="days_until"><item quantity="one">还有 %1$d 天</item><item quantity="other">还有 %1$d 天</item></plurals>
     <plurals name="days_since"><item quantity="one">已过 %1$d 天</item><item quantity="other">已过 %1$d 天</item></plurals>
     <string name="date_range">%1$s — %2$s</string>
+    <string name="appearance">外观与主题</string>
+    <string name="theme_style">风格</string>
+    <string name="theme_font">字体</string>
+    <string name="theme_font_note">中文自动跟随英文字体搭配。</string>
+    <string name="theme_components">组件微调</string>
+    <string name="theme_reset">恢复预设组件</string>
+    <string name="theme_custom">已微调</string>
+    <string name="theme_original">墨印经典</string>
+    <string name="theme_minimal">极简留白</string>
+    <string name="theme_editorial">报刊编辑</string>
+    <string name="theme_grid">方格手账</string>
+    <string name="theme_ticket">票据清单</string>
+    <string name="theme_today">今日看板</string>
+    <string name="theme_date">日期布局</string>
+    <string name="theme_calendar">月历样式</string>
+    <string name="theme_agenda">事项布局</string>
+    <string name="theme_buttons">图标按钮</string>
+    <string name="theme_flow">页面顺序</string>
+    <string name="theme_tracking">字符间距</string>
+    <string name="theme_caps">英文标题</string>
+    <string name="theme_split">并排日期</string>
+    <string name="theme_masthead">放大分栏</string>
+    <string name="theme_tiles">分格数字</string>
+    <string name="theme_reverse">日期在右</string>
+    <string name="theme_center">日期居中</string>
+    <string name="theme_open">无网格 · 圆形</string>
+    <string name="theme_ruled">横向周分隔线</string>
+    <string name="theme_plain">无网格 · 下划线</string>
+    <string name="theme_timeline">时间在左</string>
+    <string name="theme_stacked">上下排列</string>
+    <string name="theme_cards">描边条目</string>
+    <string name="theme_ledger">时间在右</string>
+    <string name="theme_bare">无边框</string>
+    <string name="theme_outline">细线描边</string>
+    <string name="theme_solid">黑底白图标</string>
+    <string name="theme_calendar_first">月历在前</string>
+    <string name="theme_agenda_first">事项在前</string>
+    <string name="theme_normal">标准</string>
+    <string name="theme_tight">紧凑</string>
+    <string name="theme_spaced">疏朗</string>
+    <string name="theme_case_normal">正常大小写</string>
+    <string name="theme_case_upper">全大写</string>
 </resources>
