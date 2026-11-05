@@ -1,72 +1,78 @@
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400&family=Noto+Serif+SC:wght@400;600;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,650;8..60,900&display=swap">
 <style>
-#ink-calendar-preview .ink-stage { min-height: 890px; display: flex; align-items: flex-start; justify-content: center; padding: 20px 0; box-sizing: border-box; }
-#ink-calendar-preview .ink-app { --ink-paper: #fff; --ink-text: #000; --ink-muted: #646464; --ink-size: 1; --ink-font: "Noto Serif SC", "Songti SC", STSong, Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 12px 18px 18px; border: 1px solid #aaa; font-family: var(--ink-font); font-size: 16px; line-height: 1.5; color-scheme: light; }
-#ink-calendar-preview .ink-app * { box-sizing: border-box; }
+#ink-calendar-preview .ink-stage { min-height: 1020px; display: flex; align-items: flex-start; justify-content: center; padding: 20px 0; box-sizing: border-box; }
+#ink-calendar-preview .ink-app { --ink-paper: #f3efe5; --ink-text: #191916; --ink-muted: #494843; --ink-rule: #9b978e; --ink-accent: #a3231d; --ink-size: 1; --ink-font: "Source Serif 4", "Noto Serif SC", "Songti SC", Georgia, serif; --ink-reading: "EB Garamond", "Noto Serif SC", "Songti SC", Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 16px 18px 22px; border: 1px solid var(--ink-rule); font-family: var(--ink-font); font-size: 20px; line-height: 1.3; color-scheme: light; }
+#ink-calendar-preview .ink-app * { box-sizing: border-box; transition: none; animation: none; }
 #ink-calendar-preview .ink-app button { color: var(--ink-text); background: var(--ink-paper); font-family: inherit; border-radius: 0; box-shadow: none; font-weight: 400; letter-spacing: normal; text-transform: none; }
-#ink-calendar-preview .ink-app button:active { background: #ddd; }
-#ink-calendar-preview .ink-app button:focus-visible { outline: 3px solid #000; outline-offset: 2px; }
-#ink-calendar-preview .ink-button { border: 1px solid var(--ink-text); min-height: 48px; padding: 4px 10px; font-size: calc(16px * var(--ink-size)); line-height: 1.3; }
-#ink-calendar-preview .ink-top { display: flex; align-items: center; justify-content: flex-end; min-height: 48px; }
-#ink-calendar-preview .ink-icon { display: grid; place-items: center; width: 48px; height: 48px; padding: 12px; border: 0; flex-shrink: 0; }
+#ink-calendar-preview .ink-app button:active { background: var(--ink-text); color: var(--ink-paper); }
+#ink-calendar-preview .ink-app button:focus-visible { outline: 2px solid var(--ink-text); outline-offset: 2px; }
+#ink-calendar-preview .ink-button { border: 1px solid var(--ink-text); min-height: 48px; padding: 4px 12px; font-size: calc(15px * var(--ink-size)); line-height: 1.2; }
+#ink-calendar-preview .ink-top { display: flex; align-items: center; gap: 8px; min-height: 48px; padding-bottom: 12px; border-bottom: 4px solid var(--ink-text); margin-bottom: 12px; }
+#ink-calendar-preview .ink-icon { display: grid; place-items: center; width: 48px; height: 48px; padding: 12px; border: 1px solid var(--ink-text); flex-shrink: 0; }
 #ink-calendar-preview .ink-icon svg { width: 24px; height: 24px; stroke-width: 1.6px; }
-#ink-calendar-preview .ink-brand { font-size: calc(18px * var(--ink-size)); font-weight: 700; }
+#ink-calendar-preview .ink-brand { flex: 1; min-width: 0; margin: 0; font-family: var(--ink-font); font-size: calc(30px * var(--ink-size)); line-height: 1; letter-spacing: -.04em; font-weight: 900; overflow-wrap: normal; }
 #ink-calendar-preview .ink-hero { display: flex; align-items: center; padding: 8px 0; gap: 18px; }
-#ink-calendar-preview .ink-number { font-size: calc(84px * var(--ink-size)); font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; }
-#ink-calendar-preview .ink-year { font-size: calc(16px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-number { font-size: calc(84px * var(--ink-size)); font-weight: 900; line-height: 1.15; letter-spacing: -.06em; }
+#ink-calendar-preview .ink-year { font-size: calc(16px * var(--ink-size)); font-weight: 400; color: var(--ink-muted); }
 #ink-calendar-preview .ink-weekday { font-size: calc(21px * var(--ink-size)); }
-#ink-calendar-preview .ink-month-nav { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; }
-#ink-calendar-preview .ink-month-title { text-align: center; font-size: calc(20px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-month-nav { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; gap: 6px; }
+#ink-calendar-preview .ink-month-title { text-align: center; font-size: calc(20px * var(--ink-size)); font-weight: 650; line-height: 1.2; }
 #ink-calendar-preview .ink-weekdays, #ink-calendar-preview .ink-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-#ink-calendar-preview .ink-weekdays span { text-align: center; display: grid; place-items: center; min-height: 30px; font-size: calc(14px * var(--ink-size)); }
-#ink-calendar-preview .ink-day { border: 2px solid transparent; min-width: 0; height: calc(50px * var(--ink-size)); margin: 1px; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: calc(19px * var(--ink-size)); line-height: 1.1; }
-#ink-calendar-preview .ink-day .ink-dot { height: 19px; line-height: 19px; font-size: 19px; }
+#ink-calendar-preview .ink-weekdays span { text-align: center; display: grid; place-items: center; min-height: 36px; font-size: calc(12px * var(--ink-size)); font-weight: 650; color: var(--ink-muted); letter-spacing: .09em; }
+#ink-calendar-preview .ink-day { position: relative; border: 2px solid transparent; border-bottom: 1px solid var(--ink-rule); min-width: 0; height: calc(53px * var(--ink-size)); margin: 0; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: calc(22px * var(--ink-size)); line-height: 1.1; }
+#ink-calendar-preview .ink-day .ink-dot { height: 14px; line-height: 14px; font-size: 16px; }
 #ink-calendar-preview .ink-day.ink-other { color: var(--ink-muted); }
-#ink-calendar-preview .ink-day.ink-selected { border-color: var(--ink-text); }
-#ink-calendar-preview .ink-day.ink-today { background: var(--ink-text); color: var(--ink-paper); font-weight: 700; }
+#ink-calendar-preview .ink-day.ink-today { border: 2px solid var(--ink-text); font-weight: 900; }
+#ink-calendar-preview .ink-day.ink-selected { background: var(--ink-text); color: var(--ink-paper); border-color: var(--ink-text); }
 #ink-calendar-preview .ink-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 0; }
-#ink-calendar-preview .ink-agenda { border-top: 1px solid var(--ink-text); padding-top: 10px; margin-top: 8px; }
-#ink-calendar-preview .ink-agenda-head { display: flex; align-items: center; justify-content: space-between; }
-#ink-calendar-preview .ink-agenda-heading { font-size: calc(18px * var(--ink-size)); font-weight: 400; }
-#ink-calendar-preview .ink-event { display: block; width: 100%; text-align: left; border: 0; padding: 10px 0; min-height: 56px; }
-#ink-calendar-preview .ink-event-time { display: block; font-size: calc(14px * var(--ink-size)); font-weight: 400; }
-#ink-calendar-preview .ink-event-name { display: block; font-size: calc(18px * var(--ink-size)); overflow-wrap: anywhere; }
+#ink-calendar-preview .ink-agenda { border-top: 4px solid var(--ink-text); padding-top: 10px; margin-top: 16px; }
+#ink-calendar-preview .ink-agenda-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 4px; gap: 8px; }
+#ink-calendar-preview .ink-agenda-heading { font-size: calc(14px * var(--ink-size)); font-weight: 650; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-accent); }
+#ink-calendar-preview .ink-event { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--ink-rule); padding: 12px 4px; min-height: 64px; }
+#ink-calendar-preview .ink-event-time { display: block; font-size: calc(13px * var(--ink-size)); font-weight: 400; color: var(--ink-muted); margin-bottom: 4px; }
+#ink-calendar-preview .ink-event-name { display: block; font-family: var(--ink-reading); font-size: calc(20px * var(--ink-size)); line-height: 1.3; overflow-wrap: anywhere; }
+#ink-calendar-preview .ink-event:active .ink-event-time { color: inherit; }
 #ink-calendar-preview .ink-empty { font-size: calc(16px * var(--ink-size)); line-height: 1.8; padding-bottom: 8px; }
-#ink-calendar-preview .ink-landscape { width: 700px; margin-top: 100px; min-height: 520px; }
-#ink-calendar-preview .ink-landscape .ink-body { display: grid; grid-template-columns: minmax(0, 36fr) minmax(0, 64fr); }
-#ink-calendar-preview .ink-landscape .ink-identity { padding: 16px 24px 0 0; }
+#ink-calendar-preview .ink-landscape { width: 700px; margin-top: 100px; min-height: 560px; }
+#ink-calendar-preview .ink-landscape .ink-body { display: grid; grid-template-columns: minmax(0, 32fr) minmax(0, 68fr); }
+#ink-calendar-preview .ink-landscape .ink-identity { padding: 8px 12px 0 0; border-right: 1px solid var(--ink-rule); }
+#ink-calendar-preview .ink-landscape .ink-calendar { padding-left: 12px; }
 #ink-calendar-preview .ink-landscape .ink-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 0; }
 #ink-calendar-preview .ink-landscape .ink-number { font-size: calc(104px * var(--ink-size)); }
 #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 10px; }
 #ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; background: rgb(0 0 0 / 25%); display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
-#ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid #000; background: #fff; color: #000; padding: 18px; }
-#ink-calendar-preview .ink-dialog h3 { font: 400 21px/1.5 var(--ink-font); margin: 0 0 16px; }
+#ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid var(--ink-text); background: var(--ink-paper); color: var(--ink-text); padding: 18px; }
+#ink-calendar-preview .ink-dialog h3 { font: 900 26px/1.2 var(--ink-font); border-bottom: 4px solid var(--ink-text); padding-bottom: 12px; margin: 0 0 16px; }
 #ink-calendar-preview .ink-dialog label { display: block; font-size: 16px; margin-bottom: 12px; }
-#ink-calendar-preview .ink-dialog input:not([type=checkbox]), #ink-calendar-preview .ink-dialog textarea, #ink-calendar-preview .ink-dialog select { font: 16px/1.5 var(--ink-font); color: #000; background: #fff; border: 1px solid #000; border-radius: 0; padding: 8px; width: 100%; min-width: 0; display: block; margin-top: 5px; }
+#ink-calendar-preview .ink-dialog input:not([type=checkbox]), #ink-calendar-preview .ink-dialog textarea, #ink-calendar-preview .ink-dialog select { font: 16px/1.5 var(--ink-font); color: var(--ink-text); background: var(--ink-paper); border: 1px solid var(--ink-text); border-radius: 0; padding: 8px; width: 100%; min-width: 0; display: block; margin-top: 5px; }
 #ink-calendar-preview .ink-dialog textarea { resize: vertical; min-height: 88px; }
 #ink-calendar-preview .ink-dialog .ink-check { display: flex; align-items: center; gap: 10px; min-height: 40px; }
-#ink-calendar-preview .ink-dialog input[type=checkbox] { width: 20px; height: 20px; accent-color: #000; }
+#ink-calendar-preview .ink-dialog input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--ink-text); }
 #ink-calendar-preview .ink-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 #ink-calendar-preview .ink-note { font-size: 14px; line-height: 1.6; }
-#ink-calendar-preview .ink-error { font-size: 14px; font-weight: 700; margin-top: 8px; }
-@media (max-width: 580px) {
-  #ink-calendar-preview .ink-stage { min-height: 1010px; padding: 12px 0; }
+#ink-calendar-preview .ink-error { font-size: 14px; font-weight: 650; color: var(--ink-accent); margin-top: 8px; }
+@media (hover: hover) {
+  #ink-calendar-preview .ink-app button:hover { background: var(--ink-text); color: var(--ink-paper); }
+  #ink-calendar-preview .ink-event:hover .ink-event-time { color: inherit; }
+}
+@media (max-width: 699px) {
+  #ink-calendar-preview .ink-stage { min-height: 1120px; padding: 12px 0; }
   #ink-calendar-preview .ink-landscape { margin-top: 0; }
   #ink-calendar-preview .ink-landscape .ink-body { display: flex; flex-direction: column; }
-  #ink-calendar-preview .ink-landscape .ink-identity { display: contents; }
+  #ink-calendar-preview .ink-landscape .ink-identity { display: contents; border: 0; }
   #ink-calendar-preview .ink-landscape .ink-hero { order: 0; flex-direction: row; gap: 14px; align-items: center; flex-wrap: wrap; padding: 12px 0; }
   #ink-calendar-preview .ink-landscape .ink-number { font-size: calc(76px * var(--ink-size)); }
-  #ink-calendar-preview .ink-landscape .ink-calendar { order: 1; }
+  #ink-calendar-preview .ink-landscape .ink-calendar { order: 1; padding-left: 0; }
   #ink-calendar-preview .ink-landscape .ink-agenda { order: 2; }
   #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 0; }
 }
 </style>
 <div id="ink-calendar-preview" class="viz-carousel viz-dotted-background" aria-label="墨日历当前布局预览" data-previous-label="上一种布局" data-next-label="下一种布局">
-  <section data-variant="横屏 · 左右布局" aria-label="横屏布局">
-    <div class="ink-stage"><article id="ink-landscape" class="ink-app ink-landscape" aria-label="横屏字体设置"></article></div>
-  </section>
-  <section data-variant="竖屏 · 上下布局" aria-label="竖屏布局" hidden>
+  <section data-variant="竖屏 · 上下布局" aria-label="竖屏布局">
     <div class="ink-stage"><article id="ink-portrait" class="ink-app ink-portrait" aria-label="竖屏字体设置"></article></div>
+  </section>
+  <section data-variant="横屏 · 左右布局" aria-label="横屏布局" hidden>
+    <div class="ink-stage"><article id="ink-landscape" class="ink-app ink-landscape" aria-label="横屏字体设置"></article></div>
   </section>
 </div>
 <script>
@@ -95,7 +101,7 @@
     if (!window.openai?.setWidgetState) return;
     const data = {};
     for (const [name, v] of Object.entries(views)) data[name] = { selected: v.state.selected, month: v.state.month, large: v.state.large };
-    window.openai.setWidgetState({ modelContent: { preview: '墨日历 · 衬线简洁版', language, portraitLargeText: views.portrait?.state.large || false, landscapeLargeText: views.landscape?.state.large || false }, privateContent: { views: data, language } }).catch(() => {});
+    window.openai.setWidgetState({ modelContent: { preview: '墨日历 · 报纸排版', language, portraitLargeText: views.portrait?.state.large || false, landscapeLargeText: views.landscape?.state.large || false }, privateContent: { views: data, language } }).catch(() => {});
   }
   for (const name of ['portrait', 'landscape']) {
     const app = root.querySelector('#ink-' + name);
@@ -105,6 +111,8 @@
     const isWide = name === 'landscape';
     const icon = (action, glyph, title) => '<button type="button" class="ink-icon cursor-interaction" data-action="' + action + '" aria-label="' + title + '" data-tooltip="' + title + '"><i data-lucide="' + glyph + '" aria-hidden="true"></i></button>';
     function render() {
+      const focused = app.contains(document.activeElement) ? document.activeElement : null;
+      const focusSelector = focused?.dataset.date ? '[data-date="' + focused.dataset.date + '"]' : focused?.dataset.action ? '[data-action="' + focused.dataset.action + '"]' : null;
       app.style.setProperty('--ink-size', state.large ? '1.18' : '1');
       app.lang = language === 'en' ? 'en' : 'zh-CN';
       const hero = isWide
@@ -129,8 +137,9 @@
         return '<button type="button" class="ink-event cursor-interaction" data-event="' + event.id + '"><span class="ink-event-time">' + escapeText(when) + '</span><span class="ink-event-name">' + escapeText(event.title) + '</span></button>';
       }).join('');
       const agenda = '<div class="ink-agenda" aria-live="polite"><div class="ink-agenda-head"><div class="ink-agenda-heading">' + (upcoming ? t('近日','Upcoming') : label(state.selected)) + '</div>' + icon('add','plus',t('添加事项','Add event')) + '</div>' + (items || '<div class="ink-empty">' + (upcoming ? t('未来七天暂无事项','No events in the next seven days') : t('这一天暂无事项','No events on this day')) + '</div>') + '</div>';
-      app.innerHTML = '<header class="ink-top">' + icon('today','calendar-days',t('回到今天','Back to today')) + icon('settings','sliders-horizontal',t('设置','Settings')) + '</header><div class="ink-body">' + (isWide ? '<div class="ink-identity">' + hero + agenda + '</div>' + calendar : hero + calendar + agenda) + '</div>';
+      app.innerHTML = '<header class="ink-top"><h1 class="ink-brand">' + t('墨日历', 'Ink Calendar') + '</h1>' + icon('today','calendar-days',t('回到今天','Back to today')) + icon('settings','sliders-horizontal',t('设置','Settings')) + '</header><div class="ink-body">' + (isWide ? '<div class="ink-identity">' + hero + agenda + '</div>' + calendar : hero + calendar + agenda) + '</div>';
       if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
+      if (focusSelector) app.querySelector(focusSelector)?.focus({preventScroll:true});
     }
     function closeDialog() { app.querySelector('.ink-shade')?.remove(); app.querySelector('[data-action="add"]')?.focus(); }
     function openDialog(content, title) {
