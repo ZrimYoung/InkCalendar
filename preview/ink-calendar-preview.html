@@ -1,0 +1,223 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap">
+<style>
+#ink-calendar-preview .ink-stage { min-height: 890px; display: flex; align-items: flex-start; justify-content: center; padding: 20px 0; box-sizing: border-box; }
+#ink-calendar-preview .ink-app { --ink-paper: #fff; --ink-text: #000; --ink-muted: #646464; --ink-size: 1; --ink-font: "Noto Serif SC", "Songti SC", STSong, Georgia, serif; position: relative; box-sizing: border-box; background: var(--ink-paper); color: var(--ink-text); width: 400px; max-width: 100%; padding: 12px 18px 18px; border: 1px solid #aaa; font-family: var(--ink-font); font-size: 16px; line-height: 1.5; color-scheme: light; }
+#ink-calendar-preview .ink-app * { box-sizing: border-box; }
+#ink-calendar-preview .ink-app button { color: var(--ink-text); background: var(--ink-paper); font-family: inherit; border-radius: 0; box-shadow: none; font-weight: 400; letter-spacing: normal; text-transform: none; }
+#ink-calendar-preview .ink-app button:active { background: #ddd; }
+#ink-calendar-preview .ink-app button:focus-visible { outline: 3px solid #000; outline-offset: 2px; }
+#ink-calendar-preview .ink-button { border: 1px solid var(--ink-text); min-height: 48px; padding: 4px 10px; font-size: calc(16px * var(--ink-size)); line-height: 1.3; }
+#ink-calendar-preview .ink-top { display: flex; align-items: center; justify-content: flex-end; min-height: 48px; }
+#ink-calendar-preview .ink-icon { display: grid; place-items: center; width: 48px; height: 48px; padding: 12px; border: 0; flex-shrink: 0; }
+#ink-calendar-preview .ink-icon svg { width: 24px; height: 24px; stroke-width: 1.6px; }
+#ink-calendar-preview .ink-brand { font-size: calc(18px * var(--ink-size)); font-weight: 700; }
+#ink-calendar-preview .ink-hero { display: flex; align-items: center; padding: 8px 0; gap: 18px; }
+#ink-calendar-preview .ink-number { font-size: calc(84px * var(--ink-size)); font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; }
+#ink-calendar-preview .ink-year { font-size: calc(16px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-weekday { font-size: calc(21px * var(--ink-size)); }
+#ink-calendar-preview .ink-month-nav { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; }
+#ink-calendar-preview .ink-month-title { text-align: center; font-size: calc(20px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-weekdays, #ink-calendar-preview .ink-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+#ink-calendar-preview .ink-weekdays span { text-align: center; display: grid; place-items: center; min-height: 30px; font-size: calc(14px * var(--ink-size)); }
+#ink-calendar-preview .ink-day { border: 2px solid transparent; min-width: 0; height: calc(50px * var(--ink-size)); margin: 1px; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: calc(19px * var(--ink-size)); line-height: 1.1; }
+#ink-calendar-preview .ink-day .ink-dot { height: 19px; line-height: 19px; font-size: 19px; }
+#ink-calendar-preview .ink-day.ink-other { color: var(--ink-muted); }
+#ink-calendar-preview .ink-day.ink-selected { border-color: var(--ink-text); }
+#ink-calendar-preview .ink-day.ink-today { background: var(--ink-text); color: var(--ink-paper); font-weight: 700; }
+#ink-calendar-preview .ink-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 0; }
+#ink-calendar-preview .ink-agenda { border-top: 1px solid var(--ink-text); padding-top: 10px; margin-top: 8px; }
+#ink-calendar-preview .ink-agenda-head { display: flex; align-items: center; justify-content: space-between; }
+#ink-calendar-preview .ink-agenda-heading { font-size: calc(18px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-event { display: block; width: 100%; text-align: left; border: 0; padding: 10px 0; min-height: 56px; }
+#ink-calendar-preview .ink-event-time { display: block; font-size: calc(14px * var(--ink-size)); font-weight: 400; }
+#ink-calendar-preview .ink-event-name { display: block; font-size: calc(18px * var(--ink-size)); overflow-wrap: anywhere; }
+#ink-calendar-preview .ink-empty { font-size: calc(16px * var(--ink-size)); line-height: 1.8; padding-bottom: 8px; }
+#ink-calendar-preview .ink-landscape { width: 700px; margin-top: 100px; min-height: 520px; }
+#ink-calendar-preview .ink-landscape .ink-body { display: grid; grid-template-columns: minmax(0, 36fr) minmax(0, 64fr); }
+#ink-calendar-preview .ink-landscape .ink-identity { padding: 16px 24px 0 0; }
+#ink-calendar-preview .ink-landscape .ink-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 0; padding: 0; }
+#ink-calendar-preview .ink-landscape .ink-number { font-size: calc(104px * var(--ink-size)); }
+#ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 10px; }
+#ink-calendar-preview .ink-shade { position: absolute; inset: 0; z-index: 5; background: rgb(0 0 0 / 25%); display: flex; align-items: flex-start; justify-content: center; padding: 110px 12px 16px; }
+#ink-calendar-preview .ink-dialog { width: 360px; max-width: 100%; border: 2px solid #000; background: #fff; color: #000; padding: 18px; }
+#ink-calendar-preview .ink-dialog h3 { font: 400 21px/1.5 var(--ink-font); margin: 0 0 16px; }
+#ink-calendar-preview .ink-dialog label { display: block; font-size: 16px; margin-bottom: 12px; }
+#ink-calendar-preview .ink-dialog input:not([type=checkbox]), #ink-calendar-preview .ink-dialog textarea, #ink-calendar-preview .ink-dialog select { font: 16px/1.5 var(--ink-font); color: #000; background: #fff; border: 1px solid #000; border-radius: 0; padding: 8px; width: 100%; min-width: 0; display: block; margin-top: 5px; }
+#ink-calendar-preview .ink-dialog textarea { resize: vertical; min-height: 88px; }
+#ink-calendar-preview .ink-dialog .ink-check { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+#ink-calendar-preview .ink-dialog input[type=checkbox] { width: 20px; height: 20px; accent-color: #000; }
+#ink-calendar-preview .ink-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#ink-calendar-preview .ink-note { font-size: 14px; line-height: 1.6; }
+#ink-calendar-preview .ink-error { font-size: 14px; font-weight: 700; margin-top: 8px; }
+@media (max-width: 580px) {
+  #ink-calendar-preview .ink-stage { min-height: 1010px; padding: 12px 0; }
+  #ink-calendar-preview .ink-landscape { margin-top: 0; }
+  #ink-calendar-preview .ink-landscape .ink-body { display: flex; flex-direction: column; }
+  #ink-calendar-preview .ink-landscape .ink-identity { display: contents; }
+  #ink-calendar-preview .ink-landscape .ink-hero { order: 0; flex-direction: row; gap: 14px; align-items: center; flex-wrap: wrap; padding: 12px 0; }
+  #ink-calendar-preview .ink-landscape .ink-number { font-size: calc(76px * var(--ink-size)); }
+  #ink-calendar-preview .ink-landscape .ink-calendar { order: 1; }
+  #ink-calendar-preview .ink-landscape .ink-agenda { order: 2; }
+  #ink-calendar-preview .ink-landscape .ink-weekday { margin-bottom: 0; }
+}
+</style>
+<div id="ink-calendar-preview" class="viz-carousel viz-dotted-background" aria-label="墨日历当前布局预览" data-previous-label="上一种布局" data-next-label="下一种布局">
+  <section data-variant="横屏 · 左右布局" aria-label="横屏布局">
+    <div class="ink-stage"><article id="ink-landscape" class="ink-app ink-landscape" aria-label="横屏字体设置"></article></div>
+  </section>
+  <section data-variant="竖屏 · 上下布局" aria-label="竖屏布局" hidden>
+    <div class="ink-stage"><article id="ink-portrait" class="ink-app ink-portrait" aria-label="竖屏字体设置"></article></div>
+  </section>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('ink-calendar-preview');
+  const today = '2026-11-05';
+  const examples = [
+    { id: 1, date: today, time: '09:30', title: '新项目讨论' },
+    { id: 2, date: '2026-11-07', time: '', title: '读书，出门散步' },
+    { id: 3, date: '2026-11-09', time: '15:00', title: '整理本周计划' }
+  ];
+  const saved = window.openai?.widgetState?.privateContent?.views || {};
+  let language = window.openai?.widgetState?.privateContent?.language === 'en' ? 'en' : 'zh';
+  const t = (zh, en) => language === 'en' ? en : zh;
+  const views = {};
+  const dateOf = key => new Date(key + 'T12:00:00Z');
+  const keyOf = value => value.toISOString().slice(0, 10);
+  const addDays = (key, count) => { const d = dateOf(key); d.setUTCDate(d.getUTCDate() + count); return keyOf(d); };
+  const monthOf = key => key.slice(0, 7) + '-01';
+  const label = key => language === 'en' ? new Intl.DateTimeFormat('en-US', {month:'short',day:'numeric',timeZone:'UTC'}).format(dateOf(key)) : Number(key.slice(5, 7)) + '月' + Number(key.slice(8)) + '日';
+  const weekday = key => new Intl.DateTimeFormat(language === 'en' ? 'en-US' : 'zh-CN', {weekday:'long',timeZone:'UTC'}).format(dateOf(key));
+  const monthLabel = key => language === 'en' ? new Intl.DateTimeFormat('en-US', {month:'long',year:'numeric',timeZone:'UTC'}).format(dateOf(key)) : key.slice(0,4) + ' 年 ' + Number(key.slice(5,7)) + ' 月';
+  const escapeText = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function validKey(value) { return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(dateOf(value).getTime()); }
+  function persist() {
+    if (!window.openai?.setWidgetState) return;
+    const data = {};
+    for (const [name, v] of Object.entries(views)) data[name] = { selected: v.state.selected, month: v.state.month, large: v.state.large };
+    window.openai.setWidgetState({ modelContent: { preview: '墨日历 · 衬线简洁版', language, portraitLargeText: views.portrait?.state.large || false, landscapeLargeText: views.landscape?.state.large || false }, privateContent: { views: data, language } }).catch(() => {});
+  }
+  for (const name of ['portrait', 'landscape']) {
+    const app = root.querySelector('#ink-' + name);
+    const previous = saved[name] || {};
+    const state = { selected: validKey(previous.selected) ? previous.selected : today, month: validKey(previous.month) ? monthOf(previous.month) : monthOf(today), large: previous.large === true, awake: true, full: true };
+    const events = examples.map(item => ({...item}));
+    const isWide = name === 'landscape';
+    const icon = (action, glyph, title) => '<button type="button" class="ink-icon cursor-interaction" data-action="' + action + '" aria-label="' + title + '" data-tooltip="' + title + '"><i data-lucide="' + glyph + '" aria-hidden="true"></i></button>';
+    function render() {
+      app.style.setProperty('--ink-size', state.large ? '1.18' : '1');
+      app.lang = language === 'en' ? 'en' : 'zh-CN';
+      const hero = isWide
+        ? '<div class="ink-hero"><div class="ink-year">' + monthLabel(today) + '</div><div class="ink-number">05</div><div class="ink-weekday">' + weekday(today) + '</div></div>'
+        : '<div class="ink-hero"><div class="ink-number">05</div><div><div class="ink-year">' + monthLabel(today) + '</div><div class="ink-weekday">' + weekday(today) + '</div></div></div>';
+      const first = dateOf(state.month);
+      const offset = (first.getUTCDay() + 6) % 7;
+      const start = addDays(state.month, -offset);
+      let cells = '';
+      for (let i = 0; i < 42; i++) {
+        const date = addDays(start, i);
+        const marked = events.some(e => e.date === date);
+        const classes = ['ink-day', 'cursor-interaction', date === today ? 'ink-today' : '', date === state.selected ? 'ink-selected' : '', monthOf(date) !== state.month ? 'ink-other' : ''].filter(Boolean).join(' ');
+        cells += '<button type="button" class="' + classes + '" data-date="' + date + '" aria-label="' + date + (date === today ? t('，今天', ', Today') : '') + (marked ? t('，有事项', ', Has events') : '') + '" aria-pressed="' + (date === state.selected) + '"><span>' + Number(date.slice(8)) + '</span><span class="ink-dot" aria-hidden="true">' + (marked ? '•' : '') + '</span></button>';
+      }
+      const calendar = '<div class="ink-calendar"><div class="ink-month-nav">' + icon('prev','chevron-left',t('上个月','Previous month')) + '<div class="ink-month-title">' + monthLabel(state.month) + '</div>' + icon('next','chevron-right',t('下个月','Next month')) + '</div><div class="ink-weekdays">' + (language === 'en' ? ['M','T','W','T','F','S','S'] : ['一','二','三','四','五','六','日']).map(d => '<span>' + d + '</span>').join('') + '</div><div class="ink-days">' + cells + '</div></div>';
+      const upcoming = state.selected === today;
+      const end = upcoming ? addDays(today, 6) : state.selected;
+      const list = events.filter(e => e.date >= state.selected && e.date <= end).sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+      const items = list.map(event => {
+        const when = (upcoming ? (event.date === today ? t('今天','Today') : label(event.date)) + '　' : '') + (event.time || t('全天','All day'));
+        return '<button type="button" class="ink-event cursor-interaction" data-event="' + event.id + '"><span class="ink-event-time">' + escapeText(when) + '</span><span class="ink-event-name">' + escapeText(event.title) + '</span></button>';
+      }).join('');
+      const agenda = '<div class="ink-agenda" aria-live="polite"><div class="ink-agenda-head"><div class="ink-agenda-heading">' + (upcoming ? t('近日','Upcoming') : label(state.selected)) + '</div>' + icon('add','plus',t('添加事项','Add event')) + '</div>' + (items || '<div class="ink-empty">' + (upcoming ? t('未来七天暂无事项','No events in the next seven days') : t('这一天暂无事项','No events on this day')) + '</div>') + '</div>';
+      app.innerHTML = '<header class="ink-top">' + icon('today','calendar-days',t('回到今天','Back to today')) + icon('settings','sliders-horizontal',t('设置','Settings')) + '</header><div class="ink-body">' + (isWide ? '<div class="ink-identity">' + hero + agenda + '</div>' + calendar : hero + calendar + agenda) + '</div>';
+      if (globalThis.lucide) lucide.createIcons({attrs:{width:24,height:24,'stroke-width':1.6}});
+    }
+    function closeDialog() { app.querySelector('.ink-shade')?.remove(); app.querySelector('[data-action="add"]')?.focus(); }
+    function openDialog(content, title) {
+      app.querySelector('.ink-shade')?.remove();
+      const shade = document.createElement('div'); shade.className = 'ink-shade';
+      shade.innerHTML = '<div class="ink-dialog" role="dialog" aria-modal="true" aria-label="' + title + '">' + content + '</div>';
+      app.appendChild(shade);
+      shade.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', closeDialog));
+      shade.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeDialog();
+        if (e.key === 'Tab') {
+          const focusables = Array.from(shade.querySelectorAll('button,input,textarea,select')).filter(el => !el.disabled);
+          const index = focusables.indexOf(document.activeElement);
+          if ((e.shiftKey && index === 0) || (!e.shiftKey && index === focusables.length - 1)) { e.preventDefault(); focusables[e.shiftKey ? focusables.length - 1 : 0].focus(); }
+        }
+      });
+      shade.querySelector('input,textarea,button')?.focus();
+      return shade;
+    }
+    function editEvent(event) {
+      const draft = event || {date: state.selected, title: '', time: ''};
+      const title = event ? t('编辑事项','Edit event') : t('添加事项','Add event');
+      const shade = openDialog('<h3>' + title + '</h3><label>' + t('日期','Date') + '<input type="date" min="1900-01-01" max="2100-12-31" data-field="date" value="' + draft.date + '"></label><label>' + t('事项','Event') + '<textarea data-field="title" maxlength="120" placeholder="' + t('写下事项（最多 120 字）','What is planned? (120 characters max)') + '">' + escapeText(draft.title) + '</textarea></label><label>' + t('时间 · 可选，留空为全天','Time · optional, blank for all day') + '<input type="text" inputmode="numeric" data-field="time" placeholder="09:30" value="' + draft.time + '"></label><div class="ink-error" role="alert"></div><div class="ink-dialog-actions">' + (event ? '<button type="button" class="ink-button cursor-interaction" data-delete>' + t('删除','Delete') + '</button>' : '') + '<button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-save>' + t('保存','Save') + '</button></div>', title);
+      shade.querySelector('[data-save]').addEventListener('click', () => {
+        const date = shade.querySelector('[data-field="date"]').value;
+        const content = shade.querySelector('[data-field="title"]').value.trim();
+        const time = shade.querySelector('[data-field="time"]').value.trim();
+        const error = shade.querySelector('.ink-error');
+        if (!date || date < '1900-01-01' || date > '2100-12-31' || !content) { error.textContent = t('请填写有效日期和事项。','Please enter a valid date and event.'); return; }
+        if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { error.textContent = t('时间请填写为 09:30，或留空表示全天。','Use a time such as 09:30, or leave it blank.'); return; }
+        if (events.length >= 20 && !event) { error.textContent = t('当前预览最多添加 20 条示例事项。','This preview supports up to 20 sample events.'); return; }
+        if (event) Object.assign(event, {date, title: content, time});
+        else events.push({id: Date.now(), date, title: content, time});
+        state.selected = date; state.month = monthOf(date); render(); persist();
+      });
+      shade.querySelector('[data-delete]')?.addEventListener('click', () => {
+        const confirmation = openDialog('<h3>' + t('删除这条事项？','Delete this event?') + '</h3><div class="ink-note">' + escapeText(event.title) + '</div><div class="ink-dialog-actions"><button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-confirm>' + t('删除','Delete') + '</button></div>', t('确认删除','Confirm deletion'));
+        confirmation.querySelector('[data-confirm]').addEventListener('click', () => { events.splice(events.indexOf(event), 1); render(); });
+      });
+    }
+    function settings() {
+      const shade = openDialog('<h3>' + t('设置','Settings') + '</h3><label class="ink-check"><input type="checkbox" data-field="awake" ' + (state.awake ? 'checked' : '') + '>' + t('保持屏幕唤醒','Keep screen awake') + '</label><label class="ink-check"><input type="checkbox" data-field="full" ' + (state.full ? 'checked' : '') + '>' + t('全屏展示','Full screen') + '</label><label class="ink-check"><input type="checkbox" data-field="large" ' + (state.large ? 'checked' : '') + '>' + t('加大文字','Larger text') + '</label><label>' + t('语言 / Language','Language / 语言') + '<select data-field="language"><option value="zh" ' + (language === 'zh' ? 'selected' : '') + '>简体中文</option><option value="en" ' + (language === 'en' ? 'selected' : '') + '>English</option></select></label><div class="ink-note">' + t('应用打开时保持唤醒。<br>事项仅保存在本机。','Stays awake while this app is open.<br>Events are stored on this device.') + '</div><div class="ink-dialog-actions"><button type="button" class="ink-button cursor-interaction" data-close>' + t('取消','Cancel') + '</button><button type="button" class="ink-button cursor-interaction" data-save>' + t('保存','Save') + '</button></div>', t('设置','Settings'));
+      shade.querySelector('[data-save]').addEventListener('click', () => {
+        for (const field of ['awake', 'full', 'large']) state[field] = shade.querySelector('[data-field="' + field + '"]').checked;
+        language = shade.querySelector('[data-field="language"]').value;
+        Object.values(views).forEach(v => v.render()); persist();
+      });
+    }
+    app.addEventListener('click', e => {
+      const button = e.target.closest('button');
+      if (!button || !app.contains(button) || button.closest('.ink-shade')) return;
+      if (button.dataset.date) { state.selected = button.dataset.date; state.month = monthOf(state.selected); render(); persist(); }
+      if (button.dataset.event) editEvent(events.find(event => String(event.id) === button.dataset.event));
+      const action = button.dataset.action;
+      if (action === 'prev' || action === 'next') {
+        const next = dateOf(state.month); next.setUTCMonth(next.getUTCMonth() + (action === 'next' ? 1 : -1));
+        if (next.getUTCFullYear() < 1900 || next.getUTCFullYear() > 2100) return;
+        state.month = keyOf(next); state.selected = monthOf(today) === state.month ? today : state.month; render(); persist();
+      }
+      if (action === 'today') { state.selected = today; state.month = monthOf(today); render(); persist(); }
+      if (action === 'add') editEvent(null);
+      if (action === 'settings') settings();
+    });
+    views[name] = {state, render};
+    render();
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({container: app, onChange: () => { render(); persist(); }});
+      tweak.addToggle(state, 'large', {label: '加大文字'});
+    }
+  }
+  window.addEventListener('openai:set_globals', event => {
+    const incoming = event.detail?.globals?.widgetState?.privateContent?.views;
+    if (!incoming) return;
+    const nextLanguage = event.detail.globals.widgetState.privateContent.language === 'en' ? 'en' : 'zh';
+    const languageChanged = language !== nextLanguage;
+    language = nextLanguage;
+    for (const [name, view] of Object.entries(views)) {
+      if (!incoming[name]) continue;
+      const item = incoming[name];
+      const changed = languageChanged || view.state.large !== (item.large === true)
+        || (validKey(item.selected) && view.state.selected !== item.selected)
+        || (validKey(item.month) && view.state.month !== monthOf(item.month));
+      view.state.large = item.large === true;
+      if (validKey(item.selected)) view.state.selected = item.selected;
+      if (validKey(item.month)) view.state.month = monthOf(item.month);
+      if (changed) view.render();
+    }
+  });
+})();
+</script>

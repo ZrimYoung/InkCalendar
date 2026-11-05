@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">墨日历</string>
+    <string name="settings">设置</string>
+    <string name="previous_month">上个月</string>
+    <string name="next_month">下个月</string>
+    <string name="today">今天</string>
+    <string name="go_today">回到今天</string>
+    <string name="add_event">添加事项</string>
+    <string name="edit_event">编辑事项</string>
+    <string name="selected">已选中</string>
+    <string name="has_events">有事项</string>
+    <string name="upcoming">近日</string>
+    <string name="all_day">全天</string>
+    <string name="empty_upcoming">未来七天暂无事项</string>
+    <string name="empty_day">这一天暂无事项</string>
+    <string name="read_failed">事项读取失败，请重新打开应用。</string>
+    <string name="date">日期</string>
+    <string name="event_title">事项</string>
+    <string name="event_hint">写下事项（最多 120 字）</string>
+    <string name="time_optional">时间 · 可选，留空为全天</string>
+    <string name="time_description">事项时间，24 小时制</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="delete_confirm">删除这条事项？</string>
+    <string name="save_failed">保存失败，当前内容仍保留。</string>
+    <string name="delete_failed">删除失败，请重试。</string>
+    <string name="title_required">请填写事项。</string>
+    <string name="title_too_long">事项最多 120 个字。</string>
+    <string name="time_invalid">时间请填写为 09:30，或留空表示全天。</string>
+    <string name="date_invalid">请选择 1900—2100 年之间的有效日期。</string>
+    <string name="keep_awake">保持屏幕唤醒</string>
+    <string name="full_screen">全屏展示</string>
+    <string name="large_text">加大文字</string>
+    <string name="language">语言 / Language</string>
+    <string name="settings_note">应用打开时保持唤醒。\n事项仅保存在本机。</string>
+</resources>

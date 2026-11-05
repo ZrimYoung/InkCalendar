@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ink Calendar</string>
+    <string name="settings">Settings</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="today">Today</string>
+    <string name="go_today">Back to today</string>
+    <string name="add_event">Add event</string>
+    <string name="edit_event">Edit event</string>
+    <string name="selected">Selected</string>
+    <string name="has_events">Has events</string>
+    <string name="upcoming">Upcoming</string>
+    <string name="all_day">All day</string>
+    <string name="empty_upcoming">No events in the next seven days</string>
+    <string name="empty_day">No events on this day</string>
+    <string name="read_failed">Could not load events. Please reopen the app.</string>
+    <string name="date">Date</string>
+    <string name="event_title">Event</string>
+    <string name="event_hint">What is planned? (120 characters max)</string>
+    <string name="time_optional">Time · optional, blank for all day</string>
+    <string name="time_description">Event time, 24-hour format</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="delete_confirm">Delete this event?</string>
+    <string name="save_failed">Could not save. Your draft is still here.</string>
+    <string name="delete_failed">Could not delete. Please try again.</string>
+    <string name="title_required">Please enter an event.</string>
+    <string name="title_too_long">Use no more than 120 characters.</string>
+    <string name="time_invalid">Use a time such as 09:30, or leave it blank.</string>
+    <string name="date_invalid">Choose a valid date between 1900 and 2100.</string>
+    <string name="keep_awake">Keep screen awake</string>
+    <string name="full_screen">Full screen</string>
+    <string name="large_text">Larger text</string>
+    <string name="language">Language / 语言</string>
+    <string name="settings_note">Stays awake while this app is open.\nEvents are stored on this device.</string>
+</resources>
