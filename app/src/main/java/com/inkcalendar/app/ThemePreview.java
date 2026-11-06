@@ -2,6 +2,7 @@ package com.inkcalendar.app;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -24,7 +25,9 @@ final class ThemePreview extends View {
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
 
-    private float previewWidth(){return component==null?188:148;}
+    private boolean landscape(){return getResources().getConfiguration().orientation==Configuration.ORIENTATION_LANDSCAPE;}
+    private boolean wideLandscape(){return landscape()&&getResources().getConfiguration().screenWidthDp>=640;}
+    private float previewWidth(){return component==null?(landscape()?240:188):148;}
     private float previewHeight(){return component==null?148:96;}
 
     @Override protected void onMeasure(int widthSpec,int heightSpec){
@@ -56,61 +59,104 @@ final class ThemePreview extends View {
         paint.setStyle(Paint.Style.FILL);paint.setTypeface(strong?bold:regular);
         paint.setTextSize(size);paint.setTextAlign(align);c.drawText(value,x,y,paint);
     }
+    private void fittedText(Canvas c,String value,float x,float y,float size,float width,Paint.Align align){
+        paint.setTypeface(regular);paint.setTextSize(size);
+        text(c,value,x,y,Math.min(size,size*width/Math.max(1,paint.measureText(value))),false,align);
+    }
     private int ruleWidth(){return Math.max(1,Math.round(theme.ruleWidth()/2f));}
     private void words(Canvas c,float x,float y){
         text(c,"November",x,y,7);text(c,theme.is("caps","on")?"FRIDAY":"Friday",x,y+13,10);
     }
 
     private void style(Canvas c){
+        float width=previewWidth(),center=width/2,right=width-10;
         text(c,theme.is("caps","on")?"INK CALENDAR":"Ink Calendar",10,12,8,true,Paint.Align.LEFT);
-        line(c,10,19,178,19,ruleWidth());
+        line(c,10,19,right,19,ruleWidth());
+        if(wideLandscape()){
+            landscapeIdentity(c,10,27,76);
+            if(theme.is("flow","agenda-first")){
+                styleAgenda(c,102,34,128,21);styleCalendar(c,10,100,220,40,3,false,false);
+            }else{
+                styleAgenda(c,10,108,76,15);styleCalendar(c,98,31,132,105,6,true,true);
+            }
+            return;
+        }
         if(theme.is("date","tiles")){
-            box(c,48,26,43,35,false);box(c,97,26,43,35,false);
-            text(c,"0",69,53,30,true,Paint.Align.CENTER);text(c,"6",118,53,30,true,Paint.Align.CENTER);
-            text(c,"November · Friday",94,71,6.5f,false,Paint.Align.CENTER);
+            box(c,center-46,26,43,35,false);box(c,center+3,26,43,35,false);
+            text(c,"0",center-25,53,30,true,Paint.Align.CENTER);text(c,"6",center+24,53,30,true,Paint.Align.CENTER);
+            text(c,"November · Friday",center,71,6.5f,false,Paint.Align.CENTER);
         }else if(theme.is("date","center")){
-            text(c,"06",94,53,36,true,Paint.Align.CENTER);text(c,"Friday",94,66,8,false,Paint.Align.CENTER);
+            text(c,"06",center,53,36,true,Paint.Align.CENTER);text(c,"Friday",center,66,8,false,Paint.Align.CENTER);
         }else if(theme.is("date","reverse")){
-            words(c,10,35);text(c,"06",178,56,34,true,Paint.Align.RIGHT);
+            words(c,10,35);text(c,"06",right,56,34,true,Paint.Align.RIGHT);
         }else{
             boolean masthead=theme.is("date","masthead");
-            text(c,"06",10,59,masthead?40:34,true,Paint.Align.LEFT);words(c,104,35);
-            if(masthead)line(c,104,56,178,56);
+            float copy=width*.55f;
+            text(c,"06",10,59,masthead?40:34,true,Paint.Align.LEFT);words(c,copy,35);
+            if(masthead)line(c,copy,56,right,56);
         }
-        if(theme.is("flow","agenda-first")){styleAgenda(c,84);styleCalendar(c,110);}
-        else{styleCalendar(c,80);styleAgenda(c,123);}
+        if(theme.is("flow","agenda-first")){styleAgenda(c,10,84,width-20,13);styleCalendar(c,10,110,width-20,38,3,false,false);}
+        else{styleCalendar(c,10,80,width-20,38,3,false,false);styleAgenda(c,10,123,width-20,13);}
     }
 
-    private void styleCalendar(Canvas c,float y){
-        for(int col=0;col<7;col++)text(c,WEEK_DAYS[col],20+col*24,y,5.5f,false,Paint.Align.CENTER);
-        for(int row=0;row<3;row++){
-            float top=y+5+row*10;
+    private void landscapeIdentity(Canvas c,float x,float y,float width){
+        if(theme.is("date","tiles")){
+            float digit=(width-4)/2;
+            box(c,x,y,digit,37,false);box(c,x+digit+4,y,digit,37,false);
+            text(c,"0",x+digit/2,y+30,29,true,Paint.Align.CENTER);
+            text(c,"6",x+width-digit/2,y+30,29,true,Paint.Align.CENTER);
+            text(c,"November",x,y+48,7);text(c,"Friday",x,y+59,8);
+        }else if(theme.is("date","reverse")){
+            text(c,"November",x,y+17,6);text(c,theme.is("caps","on")?"FRIDAY":"Friday",x,y+29,7);
+            text(c,"06",x+width,y+47,27,true,Paint.Align.RIGHT);
+        }else{
+            boolean centered=theme.is("date","center");Paint.Align align=centered?Paint.Align.CENTER:Paint.Align.LEFT;
+            float anchor=centered?x+width/2:x;
+            text(c,"November",anchor,y+7,7,false,align);
+            text(c,"06",anchor,y+46,theme.is("date","masthead")||centered?38:32,true,align);
+            text(c,theme.is("caps","on")?"FRIDAY":"Friday",anchor,y+60,8,false,align);
+        }
+    }
+
+    private void styleCalendar(Canvas c,float x,float y,float width,float height,int rows,boolean fullMonth,boolean title){
+        if(title){text(c,"November 2026",x+width/2,y+7,8,true,Paint.Align.CENTER);y+=16;height-=16;}
+        float column=width/7,step=(height-8)/rows;
+        for(int col=0;col<7;col++)text(c,WEEK_DAYS[col],x+(col+.5f)*column,y,5.5f,false,Paint.Align.CENTER);
+        for(int row=0;row<rows;row++){
+            float top=y+5+row*step;
             for(int col=0;col<7;col++){
-                float x=20+col*24;boolean selected=row==0&&col==4;
-                if(selected&&theme.is("calendar","ruled")){box(c,x-10,top-1,20,10,true);paint.setColor(Color.WHITE);}
+                float center=x+(col+.5f)*column;int value=fullMonth?row*7+col-5:row*7+col+2;
+                boolean selected=value==6;int day=value<1?31+value:value>30?value-30:value;
+                if(selected&&theme.is("calendar","ruled")){box(c,center-column/2,top-1,column,step,true);paint.setColor(Color.WHITE);}
                 else if(selected&&theme.is("calendar","open")){
-                    paint.setStyle(Paint.Style.FILL);c.drawCircle(x,top+4,5,paint);paint.setColor(Color.WHITE);
+                    paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.4f,Math.min(6,step*.5f),paint);paint.setColor(Color.WHITE);
                 }
-                text(c,String.valueOf(row*7+col+2),x,top+7,7,selected,Paint.Align.CENTER);paint.setColor(Color.BLACK);
-                if(selected&&theme.is("calendar","plain"))line(c,x-5,top+9,x+5,top+9);
+                text(c,String.valueOf(day),center,top+step*.7f,Math.min(8,step*.7f),selected,Paint.Align.CENTER);paint.setColor(Color.BLACK);
+                if(selected&&theme.is("calendar","plain"))line(c,center-5,top+step-1,center+5,top+step-1);
             }
-            if(theme.is("calendar","ruled"))line(c,10,top+9,178,top+9,.5f);
+            if(theme.is("calendar","ruled"))line(c,x,top+step-1,x+width,top+step-1,.5f);
         }
     }
 
-    private void styleAgenda(Canvas c,float y){
-        line(c,10,y-3,178,y-3,ruleWidth());
+    private void styleAgenda(Canvas c,float x,float y,float width,float step){
+        line(c,x,y-3,x+width,y-3,ruleWidth());
         for(int i=0;i<2;i++){
-            float top=y+i*13;String time=i==0?"09:30":"14:00",name=i==0?"Read a chapter":"Weekly plan";
-            if(theme.is("agenda","cards"))box(c,10,top-1,168,12,false);
-            if(theme.is("agenda","timeline")){text(c,time,12,top+7,6);text(c,name,54,top+7,7);}
-            else if(theme.is("agenda","ledger")){text(c,name,13,top+7,7);text(c,time,174,top+7,6,false,Paint.Align.RIGHT);}
-            else{text(c,time,12,top+3,5);text(c,name,12,top+10,6.5f);}
+            float top=y+i*step;String time=i==0?"09:30":"14:00",name=i==0?"Read a chapter":"Weekly plan";
+            if(theme.is("agenda","cards"))box(c,x,top-1,width,step-1,false);
+            if(theme.is("agenda","timeline")){
+                fittedText(c,time,x+2,top+7,6,width*.28f-2,Paint.Align.LEFT);
+                fittedText(c,name,x+width*.32f,top+7,6.5f,width*.68f-2,Paint.Align.LEFT);
+            }else if(theme.is("agenda","ledger")){
+                fittedText(c,name,x+2,top+7,6.5f,width*.68f-2,Paint.Align.LEFT);
+                fittedText(c,time,x+width-2,top+7,6,width*.28f-2,Paint.Align.RIGHT);
+            }else{text(c,time,x+2,top+3,5);fittedText(c,name,x+2,top+10,6.5f,width-4,Paint.Align.LEFT);}
         }
     }
 
     private void component(Canvas c){
-        if("date".equals(component))hero(c,30);
+        if("date".equals(component)){
+            if(wideLandscape())landscapeIdentity(c,36,10,76);else hero(c,30);
+        }
         else if("calendar".equals(component))calendar(c,10,75);
         else if("agenda".equals(component))agenda(c,12,72);
         else if("buttons".equals(component)){
@@ -121,7 +167,12 @@ final class ThemePreview extends View {
                 if(i==1)line(c,x+13,39,x+13,51);paint.setColor(Color.BLACK);
             }
         }else if("flow".equals(component)){
-            if(theme.is("flow","agenda-first")){agenda(c,10,30);calendar(c,49,40);}
+            if(wideLandscape()){
+                if(theme.is("flow","agenda-first")){
+                    text(c,"06",12,36,28,true,Paint.Align.LEFT);styleAgenda(c,62,15,76,14);
+                    styleCalendar(c,10,54,128,38,3,false,false);
+                }else{styleAgenda(c,10,48,48,14);styleCalendar(c,66,15,72,74,6,true,true);}
+            }else if(theme.is("flow","agenda-first")){agenda(c,10,30);calendar(c,49,40);}
             else{calendar(c,10,40);agenda(c,58,30);}
         }else{
             String value=theme.is("caps","on")?"INK CALENDAR":"Ink Calendar";float x=12;

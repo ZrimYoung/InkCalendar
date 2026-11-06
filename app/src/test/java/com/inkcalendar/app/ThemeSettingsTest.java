@@ -86,6 +86,61 @@ public class ThemeSettingsTest {
             assertEquals(width,preview.getMeasuredWidth());assertEquals(width*expected,preview.getMeasuredHeight(),.51f);
         }
     }
+    private void measure(View root,int width){
+        root.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+        root.layout(0,0,width,root.getMeasuredHeight());
+    }
+    private void boundedChoices(View root){
+        for(View view:all(root))if(view instanceof ChoiceGrid){
+            ViewGroup grid=(ViewGroup)view;
+            for(int i=0;i<grid.getChildCount();i++){
+                View card=grid.getChildAt(i);assertTrue(card.getWidth()>0);assertTrue(card.getWidth()<=208);
+                assertTrue(card.getLeft()>=0);assertTrue(card.getRight()<=grid.getWidth());assertTrue(card.getBottom()<=grid.getHeight());
+                for(int j=0;j<i;j++){
+                    View other=grid.getChildAt(j);
+                    assertTrue(card.getLeft()>=other.getRight()||card.getRight()<=other.getLeft()||card.getTop()>=other.getBottom()||card.getBottom()<=other.getTop());
+                }
+                for(View child:all(card))if(child instanceof TextView){
+                    TextView text=(TextView)child;
+                    if(text.getLayout()!=null)for(int line=0;line<text.getLineCount();line++)assertTrue(text.getText().toString(),text.getLayout().getLineMax(line)<=text.getWidth()-text.getCompoundPaddingLeft()-text.getCompoundPaddingRight()+2);
+                }
+            }
+        }
+    }
+    @Test public void choicesReflowAcrossWidthsAndKeepNestedDrafts()throws Exception{
+        prefs.edit().putBoolean("large",true).commit();controller.recreate();activity=controller.get();
+        settings();appearance();desc(dialog(),"Geist").performClick();int narrowColumns=0;
+        try{
+            for(int width:new int[]{320,572,773,1400}){
+                RuntimeEnvironment.setQualifiers("w"+width+"dp-h"+(width>=640?572:773)+"dp-"+(width>=640?"land":"port")+"-mdpi");
+                controller.recreate();activity=controller.get();View root=dialog();measure(root,width);boundedChoices(root);
+                assertEquals("geist",((ThemeConfig)field("appearanceThemeDraft")).font);
+                assertTrue(((RadioButton)root.findViewWithTag("geist")).isChecked());
+                ViewGroup fonts=root.findViewWithTag("choices:fonts");java.util.Set<Integer> positions=new java.util.HashSet<>();
+                for(int i=0;i<fonts.getChildCount();i++)positions.add(fonts.getChildAt(i).getLeft());
+                if(width==320)narrowColumns=positions.size();else if(width>=773)assertTrue(positions.size()>narrowColumns);
+            }
+            ViewGroup fonts=dialog().findViewWithTag("choices:fonts");View first=fonts.getChildAt(0);
+            for(int width:new int[]{320,1400,248,773,320}){measure(fonts,width);boundedChoices(fonts);assertSame(first,fonts.getChildAt(0));}
+            text(dialog(),"Customize components").performClick();measure(dialog(),1400);boundedChoices(dialog());
+            assertEquals(7,all(dialog()).stream().filter(v->v instanceof ChoiceGrid).count());
+            desc(dialog(),"Date on right").performClick();
+            RuntimeEnvironment.setQualifiers("w320dp-h773dp-port-mdpi");controller.recreate();activity=controller.get();measure(dialog(),320);boundedChoices(dialog());
+            assertEquals("geist",((ThemeConfig)field("componentThemeDraft")).font);assertTrue(((ThemeConfig)field("componentThemeDraft")).is("date","reverse"));
+            save();save();assertEquals("original",ThemeConfig.read(prefs).font);save();assertEquals("geist",ThemeConfig.read(prefs).font);assertTrue(ThemeConfig.read(prefs).is("date","reverse"));
+        }finally{RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");}
+    }
+    @Test public void pagePreviewChangesFrameWhenRotatedWhileLocalComponentsKeepTheirShape(){
+        try{
+            for(boolean landscape:new boolean[]{false,true}){
+                RuntimeEnvironment.setQualifiers(landscape?"w773dp-h572dp-land-mdpi":"w572dp-h773dp-port-mdpi");
+                ThemePreview page=new ThemePreview(activity,new ThemeConfig(),null),calendar=new ThemePreview(activity,new ThemeConfig(),"calendar");
+                measure(page,240);measure(calendar,240);
+                assertEquals(240*(landscape?148f/240:148f/188),page.getMeasuredHeight(),.51f);
+                assertEquals(240*96f/148,calendar.getMeasuredHeight(),.51f);
+            }
+        }finally{RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");}
+    }
     @Test public void componentDraftAndFontSurviveRecreationAndSave()throws Exception{
         settings();appearance();desc(dialog(),"Geist").performClick();text(dialog(),"Customize components").performClick();desc(dialog(),"Date on right").performClick();
         controller.recreate();activity=controller.get();assertTrue(((ThemeConfig)field("componentThemeDraft")).is("date","reverse"));

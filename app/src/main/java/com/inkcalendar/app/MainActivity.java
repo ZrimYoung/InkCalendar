@@ -637,40 +637,32 @@ public final class MainActivity extends Activity {
         appearanceDialog=new Dialog(this);appearanceDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form=pageForm(R.string.appearance);
         settingActions(form,()->appearanceDialog.dismiss(),()->{destination.font=draft.font;destination.style=draft.style;destination.overrides.clear();destination.overrides.putAll(draft.overrides);changed.run();appearanceDialog.dismiss();});
-        themeSection(form,R.string.theme_style);LinearLayout gallery=column();form.addView(gallery);
+        themeSection(form,R.string.theme_style);ChoiceGrid gallery=new ChoiceGrid(this);gallery.setTag("choices:styles");form.addView(gallery);
         final Runnable[] update={null};
         update[0]=()->{
             gallery.removeAllViews();
-            for(int i=0;i<ThemeConfig.STYLES.length;i+=2){LinearLayout row=row();row.setGravity(Gravity.TOP);
-                for(int j=i;j<Math.min(i+2,ThemeConfig.STYLES.length);j++){
-                    final String id=ThemeConfig.STYLES[j];ThemeConfig sample=new ThemeConfig(draft);if(!draft.style.equals(id))sample.chooseStyle(id);
-                    String title=getString(ThemeConfig.STYLE_LABELS[j])+(draft.style.equals(id)&&!draft.overrides.isEmpty()?" · "+getString(R.string.theme_custom):"");
-                    row.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);update[0].run();}),cardBounds());
-                }if(row.getChildCount()==1)row.addView(new View(this),cardBounds());gallery.addView(row);
+            for(int i=0;i<ThemeConfig.STYLES.length;i++){
+                final String id=ThemeConfig.STYLES[i];ThemeConfig sample=new ThemeConfig(draft);if(!draft.style.equals(id))sample.chooseStyle(id);
+                String title=getString(ThemeConfig.STYLE_LABELS[i])+(draft.style.equals(id)&&!draft.overrides.isEmpty()?" · "+getString(R.string.theme_custom):"");
+                gallery.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);update[0].run();}));
             }
         };update[0].run();appearanceChanged=update[0];
         themeSection(form,R.string.theme_font);form.addView(label(R.string.theme_font_note,13,false));
-        LinearLayout choices=column();
-        for(int i=0;i<ThemeConfig.FONTS.length;i+=2){
-            LinearLayout row=row();row.setGravity(Gravity.TOP);
-            for(int j=i;j<Math.min(i+2,ThemeConfig.FONTS.length);j++){
-                final String id=ThemeConfig.FONTS[j];
-                row.addView(fontCard(id,ThemeConfig.FONT_NAMES[j],id.equals(draft.font),()->{
-                    draft.font=id;
-                    for(String font:ThemeConfig.FONTS){
-                        choices.findViewWithTag("font:"+font).setSelected(id.equals(font));
-                        ((RadioButton)choices.findViewWithTag(font)).setChecked(id.equals(font));
-                    }
-                }),cardBounds());
-            }
-            if(row.getChildCount()==1)row.addView(new View(this),cardBounds());
-            choices.addView(row);
+        ChoiceGrid choices=new ChoiceGrid(this);choices.setTag("choices:fonts");
+        for(int i=0;i<ThemeConfig.FONTS.length;i++){
+            final String id=ThemeConfig.FONTS[i];
+            choices.addView(fontCard(id,ThemeConfig.FONT_NAMES[i],id.equals(draft.font),()->{
+                draft.font=id;
+                for(String font:ThemeConfig.FONTS){
+                    choices.findViewWithTag("font:"+font).setSelected(id.equals(font));
+                    ((RadioButton)choices.findViewWithTag(font)).setChecked(id.equals(font));
+                }
+            }));
         }
         form.addView(choices);
         form.addView(button(getString(R.string.theme_components),()->showComponents(draft,update[0])));
         showPage(appearanceDialog,form);
     }
-    private LinearLayout.LayoutParams cardBounds(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(dp(3),dp(4),dp(3),dp(4));return p;}
     private void selectionCard(LinearLayout card){
         StateListDrawable border=new StateListDrawable();
         border.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));
@@ -684,7 +676,7 @@ public final class MainActivity extends Activity {
         card.setPadding(dp(8),dp(8),dp(8),dp(8));card.setMinimumHeight(dp(148*textScale));
         card.setSelected(chosen);card.setContentDescription(title);
         FrameLayout preview=new FrameLayout(this);
-        TextView sample=text("Aa",52,false);sample.setTag("font-sample:"+id);
+        FitDateView sample=new FitDateView(this);sample.setText(R.string.theme_font_sample);sample.maximum(52*textScale);sample.setTag("font-sample:"+id);sample.setTextColor(INK);
         sample.setTypeface(fonts.latin(id,false));sample.setIncludeFontPadding(false);
         sample.setGravity(Gravity.CENTER);sample.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         preview.addView(sample,new FrameLayout.LayoutParams(-1,-1));
@@ -714,13 +706,12 @@ public final class MainActivity extends Activity {
             sections.removeAllViews();
             for(int i=0;i<ThemeConfig.KEYS.length;i++){
                 final String key=ThemeConfig.KEYS[i];themeSection(sections,ThemeConfig.KEY_LABELS[i]);
-                for(int j=0;j<ThemeConfig.OPTIONS[i].length;j+=2){LinearLayout row=row();row.setGravity(Gravity.TOP);
-                    for(int k=j;k<Math.min(j+2,ThemeConfig.OPTIONS[i].length);k++){
-                        final String value=ThemeConfig.OPTIONS[i][k];ThemeConfig sample=new ThemeConfig(draft);sample.choose(key,value);
-                        row.addView(themeCard(sample,key,getString(ThemeConfig.OPTION_LABELS[i][k]),draft.is(key,value),()->{draft.choose(key,value);update[0].run();}),cardBounds());
-                    }
-                    if(row.getChildCount()==1)row.addView(new View(this),cardBounds());sections.addView(row);
+                ChoiceGrid choices=new ChoiceGrid(this);choices.setTag("choices:"+key);
+                for(int j=0;j<ThemeConfig.OPTIONS[i].length;j++){
+                    final String value=ThemeConfig.OPTIONS[i][j];ThemeConfig sample=new ThemeConfig(draft);sample.choose(key,value);
+                    choices.addView(themeCard(sample,key,getString(ThemeConfig.OPTION_LABELS[i][j]),draft.is(key,value),()->{draft.choose(key,value);update[0].run();}));
                 }
+                sections.addView(choices);
             }
         };
         form.addView(button(getString(R.string.theme_reset),()->{draft.overrides.clear();update[0].run();}));form.addView(sections);update[0].run();showPage(componentDialog,form);

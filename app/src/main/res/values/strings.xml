@@ -82,6 +82,7 @@
     <string name="appearance">Appearance and themes</string>
     <string name="theme_style">Style</string>
     <string name="theme_font">Font</string>
+    <string name="theme_font_sample" translatable="false">Aa</string>
     <string name="theme_font_note">Chinese is paired automatically with the English font.</string>
     <string name="theme_components">Customize components</string>
     <string name="theme_reset">Use preset components</string>
