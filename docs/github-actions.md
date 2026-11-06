@@ -21,7 +21,7 @@
 6abe0b1fb9a54c235449098445e5a63053f67e8606cf309816d38313fb6fa72f
 ```
 
-[0.4.1 验收记录](validation-0.4.1.md)记载 v1/v2 签名验证与覆盖升级通过；该版没有 GitHub Release APK，不能把旧版证书核对直接说成对 0.4.1 发布包的重新验证。
+[0.4.1 验收记录](validation-0.4.1.md)记载 v1/v2 签名验证与覆盖升级通过；本次在线证书核对范围为上述两个已发布版本，不能把它说成对 0.4.1 APK 的重新验证。
 
 ## CI 签名模式
 
@@ -40,3 +40,11 @@ PR 始终采用临时调试密钥；未配置原 keystore Secret 的其他运行
 Secret 应从原 keystore 创建，不能从 APK 的公开证书恢复私钥。现有项目使用 Android 默认调试别名 `androiddebugkey` 和默认调试口令 `android`。工作流会先核对 keystore 证书与上述已发布证书一致，再核对生成 APK 确实使用了它；不一致即失败。
 
 原私钥只在 main 推送或手动触发的可信运行中导入临时目录，PR 不能获取该 Secret。Secret 配置完成前，CI 不会声称沿用了原签名。本次只提供配置入口，不生成替代原私钥的新长期密钥，也不变更正式发布签名策略。
+
+## 2026-11-06 接入验证
+
+配置通过 YAML 解析、触发范围/权限断言、官方 Actions 固定提交核对和 Bash 语法检查。作业级环境变量不使用 runner 上下文，Android 用户目录在步骤启动后通过 GITHUB_ENV 设置。
+
+首次在线验证遇到 GitHub `startup_failure`：即使独立分支仅保留一个无依赖、只执行 echo 的最小工作流，仍在启动时失败，没有产生 job 或日志。诊断运行见 [42173822933](https://github.com/ZrimYoung/InkCalendar/actions/runs/42173822933)。API 未给出进一步错误原因，不能据此声称测试、lint 或 APK 构建已经通过。
+
+临时诊断配置已清理，草稿 PR 保留完整预期工作流。main 和主题分支未修改；需先解决 GitHub 启动问题并重新验证，再评估合并。
