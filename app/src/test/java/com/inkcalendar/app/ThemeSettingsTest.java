@@ -39,7 +39,7 @@ public class ThemeSettingsTest {
     private void appearance(){desc(dialog(),"Appearance and themes").performClick();}
     private void save(){desc(dialog(),"Save").performClick();}
     @Test public void themeAndFontAreIndependentAndPersistWithLatestFeatures()throws Exception{
-        settings();appearance();assertEquals(6,all(dialog()).stream().filter(v->v instanceof ThemePreview).count());
+        settings();appearance();assertEquals(5,all(dialog()).stream().filter(v->v instanceof ThemePreview).count());
         assertEquals(7,all(dialog()).stream().filter(v->v instanceof RadioButton&&v.getTag() instanceof String).count());
         desc(dialog(),"Geist").performClick();desc(dialog(),"Ticket").performClick();save();save();
         assertEquals("geist",prefs.getString("theme_font",""));assertEquals("ticket",prefs.getString("theme_style",""));
@@ -50,14 +50,47 @@ public class ThemeSettingsTest {
     }
     @Test public void nestedCancelAndOuterCancelDoNotApplyDrafts(){
         settings();appearance();desc(dialog(),"Quiet Space").performClick();desc(dialog(),"Geist").performClick();desc(dialog(),"Cancel").performClick();save();
-        assertEquals("original",ThemeConfig.read(prefs).style);assertEquals("original",ThemeConfig.read(prefs).font);
-        settings();appearance();desc(dialog(),"Ticket").performClick();save();desc(dialog(),"Cancel").performClick();assertEquals("original",ThemeConfig.read(prefs).style);
+        assertEquals("editorial",ThemeConfig.read(prefs).style);assertEquals("original",ThemeConfig.read(prefs).font);
+        settings();appearance();desc(dialog(),"Ticket").performClick();save();desc(dialog(),"Cancel").performClick();assertEquals("editorial",ThemeConfig.read(prefs).style);
+    }
+    @Test public void fontCardsShowActualAaAboveNameAndKeepExactlyOneSelection()throws Exception{
+        prefs.edit().putBoolean("large",true).commit();controller.recreate();activity=controller.get();
+        settings();appearance();View root=dialog();ThemeFonts fonts=new ThemeFonts(activity.getAssets());
+        root.measure(View.MeasureSpec.makeMeasureSpec(320,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+        root.layout(0,0,320,root.getMeasuredHeight());
+        List<ThemePreview> thumbnails=new ArrayList<>();for(View v:all(root))if(v instanceof ThemePreview)thumbnails.add((ThemePreview)v);
+        assertEquals(5,thumbnails.size());assertTrue(thumbnails.get(0).getWidth()>0);
+        assertEquals(thumbnails.get(0).getWidth(),thumbnails.get(4).getWidth());
+        for(int i=0;i<ThemeConfig.FONTS.length;i++){
+            String id=ThemeConfig.FONTS[i];View card=desc(root,ThemeConfig.FONT_NAMES[i]);
+            TextView sample=card.findViewWithTag("font-sample:"+id),name=card.findViewWithTag("font-name:"+id);
+            assertEquals("Aa",sample.getText().toString());assertSame(fonts.latin(id,false),sample.getTypeface());
+            assertEquals(ThemeConfig.FONT_NAMES[i],name.getText().toString());
+            assertTrue(id,name.getTop()>=((View)sample.getParent()).getBottom());
+            assertTrue(id,name.getBottom()<=card.getHeight()-card.getPaddingBottom());
+            assertNotNull(name.getLayout());
+            for(int line=0;line<name.getLineCount();line++)assertTrue(id,name.getLayout().getLineMax(line)<=name.getWidth()-name.getCompoundPaddingLeft()-name.getCompoundPaddingRight()+1);
+            card.performClick();assertEquals(id,((ThemeConfig)field("appearanceThemeDraft")).font);
+            for(String other:ThemeConfig.FONTS){
+                assertEquals(other,id.equals(other),root.findViewWithTag("font:"+other).isSelected());
+                assertEquals(other,id.equals(other),((RadioButton)root.findViewWithTag(other)).isChecked());
+            }
+            assertEquals("original",ThemeConfig.read(prefs).font);
+        }
+    }
+    @Test public void thumbnailHeightFollowsWidthWithoutDistortingTheAspectRatio(){
+        for(String component:new String[]{null,"calendar"})for(int width:new int[]{100,188,320,600}){
+            ThemePreview preview=new ThemePreview(activity,new ThemeConfig(),component);
+            preview.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+            float expected=component==null?148f/188:96f/148;
+            assertEquals(width,preview.getMeasuredWidth());assertEquals(width*expected,preview.getMeasuredHeight(),.51f);
+        }
     }
     @Test public void componentDraftAndFontSurviveRecreationAndSave()throws Exception{
         settings();appearance();desc(dialog(),"Geist").performClick();text(dialog(),"Customize components").performClick();desc(dialog(),"Date on right").performClick();
         controller.recreate();activity=controller.get();assertTrue(((ThemeConfig)field("componentThemeDraft")).is("date","reverse"));
         save();save();save();ThemeConfig saved=ThemeConfig.read(prefs);assertEquals("geist",saved.font);assertTrue(saved.is("date","reverse"));
-        assertEquals("original",saved.style);assertFalse(saved.overrides.isEmpty());
+        assertEquals("editorial",saved.style);assertFalse(saved.overrides.isEmpty());
     }
     @Test public void eventDotHasItsOwnSlotInEveryPreset()throws Exception{
         EventStore store=(EventStore)field("store");String day=Dates.today();store.save(new Event(0,day,"Marker · 事项点",""));
@@ -88,6 +121,17 @@ public class ThemeSettingsTest {
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
         settings();text(dialog(),"Force landscape").performClick();desc(dialog(),"Cancel").performClick();
         assertEquals("portrait",prefs.getString("orientation",""));assertEquals("geist",ThemeConfig.read(prefs).font);
+    }
+    @Test public void legacyClassicSettingsAndDraftsMapToEditorialWithoutLosingCustomizations(){
+        prefs.edit().putString("theme_style","original").putString("theme_font","geist").putString("theme_date","reverse").commit();
+        ThemeConfig migrated=ThemeConfig.read(prefs);assertEquals("editorial",migrated.style);assertEquals("geist",migrated.font);
+        assertTrue(migrated.is("date","reverse"));assertTrue(migrated.is("calendar","ruled"));
+        android.os.Bundle state=new android.os.Bundle();state.putString("draft.style","original");state.putString("draft.font","space");state.putString("draft.agenda","cards");
+        ThemeConfig restored=ThemeConfig.fromBundle(state,"draft.");assertEquals("editorial",restored.style);assertEquals("space",restored.font);assertTrue(restored.is("agenda","cards"));
+        SharedPreferences.Editor edit=prefs.edit();migrated.save(edit);edit.commit();
+        assertEquals("editorial",prefs.getString("theme_style",""));assertEquals("reverse",prefs.getString("theme_date",""));assertEquals("geist",prefs.getString("theme_font",""));
+        prefs.edit().remove("theme_style").commit();assertEquals("editorial",ThemeConfig.read(prefs).style);
+        prefs.edit().putString("theme_style","unknown").commit();assertEquals("editorial",ThemeConfig.read(prefs).style);
     }
 
 }

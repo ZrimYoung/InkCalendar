@@ -39,6 +39,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -645,25 +646,63 @@ public final class MainActivity extends Activity {
                     final String id=ThemeConfig.STYLES[j];ThemeConfig sample=new ThemeConfig(draft);if(!draft.style.equals(id))sample.chooseStyle(id);
                     String title=getString(ThemeConfig.STYLE_LABELS[j])+(draft.style.equals(id)&&!draft.overrides.isEmpty()?" · "+getString(R.string.theme_custom):"");
                     row.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);update[0].run();}),cardBounds());
-                }gallery.addView(row);
+                }if(row.getChildCount()==1)row.addView(new View(this),cardBounds());gallery.addView(row);
             }
         };update[0].run();appearanceChanged=update[0];
         themeSection(form,R.string.theme_font);form.addView(label(R.string.theme_font_note,13,false));
-        RadioGroup choices=new RadioGroup(this);
-        for(int i=0;i<ThemeConfig.FONTS.length;i++){
-            final String id=ThemeConfig.FONTS[i];RadioButton option=new RadioButton(this);option.setId(View.generateViewId());option.setTag(id);
-            option.setText(ThemeConfig.FONT_NAMES[i]+"\nInk Calendar · 墨日历 0123456789");styleChoice(option,true);
-            option.setTypeface(fonts.latin(id,false));option.setTextSize(16*textScale);option.setText(ThemeFonts.mixed(option.getText(),fonts.chinese(id),false));option.setPadding(0,dp(10),0,dp(10));
-            option.setContentDescription(ThemeConfig.FONT_NAMES[i]);choices.addView(option);
+        LinearLayout choices=column();
+        for(int i=0;i<ThemeConfig.FONTS.length;i+=2){
+            LinearLayout row=row();row.setGravity(Gravity.TOP);
+            for(int j=i;j<Math.min(i+2,ThemeConfig.FONTS.length);j++){
+                final String id=ThemeConfig.FONTS[j];
+                row.addView(fontCard(id,ThemeConfig.FONT_NAMES[j],id.equals(draft.font),()->{
+                    draft.font=id;
+                    for(String font:ThemeConfig.FONTS){
+                        choices.findViewWithTag("font:"+font).setSelected(id.equals(font));
+                        ((RadioButton)choices.findViewWithTag(font)).setChecked(id.equals(font));
+                    }
+                }),cardBounds());
+            }
+            if(row.getChildCount()==1)row.addView(new View(this),cardBounds());
+            choices.addView(row);
         }
-        choices.check(choices.findViewWithTag(draft.font).getId());choices.setOnCheckedChangeListener((group,id)->draft.font=(String)group.findViewById(id).getTag());form.addView(choices);
+        form.addView(choices);
         form.addView(button(getString(R.string.theme_components),()->showComponents(draft,update[0])));
         showPage(appearanceDialog,form);
     }
     private LinearLayout.LayoutParams cardBounds(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(dp(3),dp(4),dp(3),dp(4));return p;}
+    private void selectionCard(LinearLayout card){
+        StateListDrawable border=new StateListDrawable();
+        border.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));
+        border.addState(new int[]{android.R.attr.state_pressed},shape(PAPER,3));
+        border.addState(new int[]{android.R.attr.state_selected},shape(PAPER,2));
+        border.addState(new int[]{},shape(PAPER,1));
+        card.setBackground(border);card.setFocusable(true);
+    }
+    private View fontCard(String id,String title,boolean chosen,Runnable action){
+        LinearLayout card=column();selectionCard(card);card.setTag("font:"+id);
+        card.setPadding(dp(8),dp(8),dp(8),dp(8));card.setMinimumHeight(dp(148*textScale));
+        card.setSelected(chosen);card.setContentDescription(title);
+        FrameLayout preview=new FrameLayout(this);
+        TextView sample=text("Aa",52,false);sample.setTag("font-sample:"+id);
+        sample.setTypeface(fonts.latin(id,false));sample.setIncludeFontPadding(false);
+        sample.setGravity(Gravity.CENTER);sample.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        preview.addView(sample,new FrameLayout.LayoutParams(-1,-1));
+        RadioButton mark=new RadioButton(this);mark.setTag(id);mark.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density,true));
+        mark.setChecked(chosen);mark.setPadding(0,0,0,0);mark.setClickable(false);mark.setFocusable(false);
+        mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        preview.addView(mark,new FrameLayout.LayoutParams(dp(32),dp(32),Gravity.TOP|Gravity.END));
+        card.addView(preview,new LinearLayout.LayoutParams(-1,dp(78*textScale)));
+        TextView name=text(title,13,false);name.setTag("font-name:"+id);
+        name.setTypeface(fonts.latin("original",false));name.setGravity(Gravity.CENTER);
+        name.setMinLines(2);name.setMinHeight(dp(38*textScale));
+        name.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        card.addView(name,new LinearLayout.LayoutParams(-1,-2));
+        card.setOnClickListener(v->action.run());return card;
+    }
     private View themeCard(ThemeConfig value,String component,String title,boolean chosen,Runnable action){
-        LinearLayout card=column();card.setPadding(dp(6),dp(6),dp(6),dp(6));StateListDrawable border=new StateListDrawable();border.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));border.addState(new int[]{android.R.attr.state_pressed},shape(PAPER,3));border.addState(new int[]{},shape(PAPER,chosen?2:1));card.setBackground(border);card.setFocusable(true);card.setSelected(chosen);
-        ThemePreview preview=new ThemePreview(this,value,component);card.addView(preview,new LinearLayout.LayoutParams(-1,dp(86)));
+        LinearLayout card=column();card.setPadding(dp(6),dp(6),dp(6),dp(6));selectionCard(card);card.setSelected(chosen);
+        ThemePreview preview=new ThemePreview(this,value,component);card.addView(preview,new LinearLayout.LayoutParams(-1,-2));
         RadioButton caption=new RadioButton(this);caption.setText(title);styleChoice(caption,true);caption.setTextSize(14*textScale);caption.setChecked(chosen);caption.setClickable(false);caption.setFocusable(false);caption.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);card.addView(caption);
         card.setContentDescription(title+(chosen?", "+getString(R.string.selected):""));card.setOnClickListener(v->action.run());return card;
     }
