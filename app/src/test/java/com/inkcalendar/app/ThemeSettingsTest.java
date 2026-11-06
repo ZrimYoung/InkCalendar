@@ -45,7 +45,7 @@ public class ThemeSettingsTest {
         assertEquals("geist",prefs.getString("theme_font",""));assertEquals("ticket",prefs.getString("theme_style",""));
         ThemeConfig config=(ThemeConfig)field("theme");assertTrue(config.sans());assertTrue(config.is("calendar","plain"));
         desc(main(),"Future events").performClick();text(dialog(),"30 days").performClick();text(dialog(),"Back").performClick();
-        desc(main(),"Milestones").performClick();text(dialog(),"Back").performClick();controller.recreate();activity=controller.get();
+        desc(main(),"Milestones").performClick();text(dialog(),"Close").performClick();controller.recreate();activity=controller.get();
         assertEquals("geist",((ThemeConfig)field("theme")).font);assertEquals(30,prefs.getInt("future_days",7));
     }
     @Test public void nestedCancelAndOuterCancelDoNotApplyDrafts(){
@@ -81,4 +81,13 @@ public class ThemeSettingsTest {
         android.graphics.Paint paint=new android.graphics.Paint();paint.setTextSize(24);TextTracking.Word wide=spaced.getSpans(0,spaced.length(),TextTracking.Word.class)[0],narrow=tight.getSpans(0,tight.length(),TextTracking.Word.class)[0];
         assertTrue(wide.getSize(paint,heading,0,3,null)>narrow.getSize(paint,heading,0,3,null));
     }
+    @Test public void orientationAndThemeDraftSurviveTogether()throws Exception{
+        settings();text(dialog(),"Force portrait").performClick();appearance();desc(dialog(),"Geist").performClick();
+        controller.recreate();activity=controller.get();save();save();
+        assertEquals("geist",ThemeConfig.read(prefs).font);assertEquals("portrait",prefs.getString("orientation",""));
+        assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
+        settings();text(dialog(),"Force landscape").performClick();desc(dialog(),"Cancel").performClick();
+        assertEquals("portrait",prefs.getString("orientation",""));assertEquals("geist",ThemeConfig.read(prefs).font);
+    }
+
 }

@@ -6,5 +6,6 @@ local.properties
 *.keystore
 *.log
 delivery/
+.local/
 .idea/
 *.iml

@@ -2,6 +2,7 @@ package com.inkcalendar.app;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +42,21 @@ public class MainActivityTest {
     private void click(View root,String label){View view=label(root,label);while(!view.isClickable() && view.getParent() instanceof View)view=(View)view.getParent();assertTrue("Not clickable: "+label,view.isClickable());view.performClick();}
     private <T> T field(String name)throws Exception{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return (T)f.get(activity);}
     private EventStore store()throws Exception{return field("store");}
+    @Test @Config(sdk={19,28}) public void orientationPersistsAndCancelKeepsTheSavedChoice() {
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,activity.getRequestedOrientation());
+        description(main(),"Settings").performClick();click(dialog(),"Force landscape");click(dialog(),"Save");
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
+        controller.recreate();activity=controller.get();
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
+        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Cancel");
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
+        assertEquals("landscape",activity.getSharedPreferences("display",0).getString("orientation",""));
+        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Save");
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
+        description(main(),"Settings").performClick();click(dialog(),"Auto (follow system)");click(dialog(),"Save");
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,activity.getRequestedOrientation());
+        assertEquals("auto",activity.getSharedPreferences("display",0).getString("orientation",""));
+    }
     @Test @Config(sdk={19,28}) public void dateJumpValidatesInputAndSelectsDate()throws Exception {
         description(main(),"Jump to date").performClick();EditText input=(EditText)description(dialog(),"Date · YYYY-MM-DD");
         input.setText("2026-02-30");click(dialog(),"Save");label(dialog(),"Choose a valid date between 1900 and 2100.");
@@ -82,7 +98,7 @@ public class MainActivityTest {
         description(main(),"Milestones").performClick();description(dialog(),"Add milestone").performClick();
         ((EditText)description(dialog(),"Name")).setText("Birthday");click(dialog(),"Save");assertEquals(1,store().milestones().size());
         click(dialog(),"Birthday");((EditText)description(dialog(),"Name")).setText("Renamed");click(dialog(),"Save");assertEquals("Renamed",store().milestones().get(0).title);
-        click(dialog(),"Back");description(main(),"Settings").performClick();click(dialog(),"Desk display mode");click(dialog(),"Save");
+        click(dialog(),"Close");description(main(),"Settings").performClick();click(dialog(),"Desk display mode");click(dialog(),"Save");
         assertEquals(View.GONE,((View)field("monthGrid")).getParent() instanceof View?((View)((View)field("monthGrid")).getParent()).getVisibility():-1);
         label(main(),"Renamed");description(main(),"Milestones").performClick();click(dialog(),"Renamed");description(dialog(),"Delete").performClick();click(dialog(),"Cancel");
         description(dialog(),"Delete").performClick();click(dialog(),"Delete");assertTrue(store().milestones().isEmpty());

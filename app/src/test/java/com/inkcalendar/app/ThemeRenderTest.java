@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import org.junit.Test;
+import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RuntimeEnvironment;
@@ -23,11 +24,16 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk=28,qualifiers="w400dp-h800dp-port-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ThemeRenderTest {
+    @Before public void requireNativeRenderer(){
+        assumeFalse("Robolectric 4.11.1 native renderer is unavailable on Windows",
+            System.getProperty("os.name","").startsWith("Windows"));
+    }
     private List<View> all(View root){List<View> out=new ArrayList<>();out.add(root);if(root instanceof ViewGroup)for(int i=0;i<((ViewGroup)root).getChildCount();i++)out.addAll(all(((ViewGroup)root).getChildAt(i)));return out;}
     private View desc(View root,String text){for(View v:all(root))if(text.contentEquals(v.getContentDescription()==null?"":v.getContentDescription()))return v;throw new AssertionError(text);}
     private View root(MainActivity a)throws Exception{Field f=MainActivity.class.getDeclaredField("root");f.setAccessible(true);return (View)f.get(a);}

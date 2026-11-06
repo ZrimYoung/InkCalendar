@@ -36,6 +36,10 @@
     <string name="keep_awake">Keep screen awake</string>
     <string name="full_screen">Full screen</string>
     <string name="large_text">Larger text</string>
+    <string name="screen_orientation">Screen orientation</string>
+    <string name="orientation_auto">Auto (follow system)</string>
+    <string name="orientation_landscape">Force landscape</string>
+    <string name="orientation_portrait">Force portrait</string>
     <string name="language">Language / 语言</string>
     <string name="settings_note">Stays awake while this app is open.\nEvents are stored on this device.</string>
     <string name="show_lunar">Lunar dates (Chinese only)</string>
@@ -51,7 +55,8 @@
     <string name="next_7">7 days</string>
     <string name="next_30">30 days</string>
     <string name="empty_range">No events in this range</string>
-    <string name="close">Back</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
     <string name="jump_date">Jump to date</string>
     <string name="display_mode">Desk display mode</string>
     <string name="display_note">Shows today, pinned milestones and up to three upcoming unfinished events. Turn off in Settings to return to the month calendar.</string>
