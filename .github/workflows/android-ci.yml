@@ -20,7 +20,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      ANDROID_USER_HOME: ${{ runner.temp }}/inkcalendar-android-user
       EXPECTED_DEBUG_CERT_SHA256: 6abe0b1fb9a54c235449098445e5a63053f67e8606cf309816d38313fb6fa72f
     steps:
       - name: Check out source
@@ -37,7 +36,9 @@ jobs:
 
       - name: Prepare Android SDK
         shell: bash
-        run: sdkmanager --install "platforms;android-35" "build-tools;34.0.0"
+        run: |
+          echo "ANDROID_USER_HOME=$RUNNER_TEMP/inkcalendar-android-user" >> "$GITHUB_ENV"
+          sdkmanager --install "platforms;android-35" "build-tools;34.0.0"
 
       - name: Select debug signing
         id: signing
