@@ -15,11 +15,16 @@ final class ThemePreview extends View {
     private static final String[] WEEK_DAYS={"M","T","W","T","F","S","S"};
     private final ThemeConfig theme;
     private final String component;
+    private final boolean weekly,balanced;
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Typeface regular,bold;
 
     ThemePreview(Context context,ThemeConfig theme,String component){
+        this(context,theme,component,DisplayOptions.read(context.getSharedPreferences("display",Context.MODE_PRIVATE)));
+    }
+    ThemePreview(Context context,ThemeConfig theme,String component,DisplayOptions options){
         super(context);this.theme=new ThemeConfig(theme);this.component=component;
+        weekly="week".equals(options.view);balanced="balanced".equals(options.layout);
         ThemeFonts fonts=new ThemeFonts(context.getAssets());
         regular=fonts.latin("original",false);bold=fonts.latin("original",true);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -73,6 +78,10 @@ final class ThemePreview extends View {
         text(c,theme.is("caps","on")?"INK CALENDAR":"Ink Calendar",10,12,8,true,Paint.Align.LEFT);
         line(c,10,19,right,19,ruleWidth());
         if(wideLandscape()){
+            if(balanced){
+                boolean first=theme.is("flow","agenda-first");float identityX=first?10:132,calendarX=first?132:10;
+                landscapeIdentity(c,identityX,27,98);styleAgenda(c,identityX,108,98,15);styleCalendar(c,calendarX,31,98,105,6,true,true);return;
+            }
             landscapeIdentity(c,10,27,76);
             if(theme.is("flow","agenda-first")){
                 styleAgenda(c,102,34,128,21);styleCalendar(c,10,100,220,40,3,false,false);
@@ -119,6 +128,7 @@ final class ThemePreview extends View {
     }
 
     private void styleCalendar(Canvas c,float x,float y,float width,float height,int rows,boolean fullMonth,boolean title){
+        if(weekly){styleWeek(c,x,y,width,height,title);return;}
         if(title){text(c,"November 2026",x+width/2,y+7,8,true,Paint.Align.CENTER);y+=16;height-=16;}
         float column=width/7,step=(height-8)/rows;
         for(int col=0;col<7;col++)text(c,WEEK_DAYS[col],x+(col+.5f)*column,y,5.5f,false,Paint.Align.CENTER);
@@ -135,6 +145,19 @@ final class ThemePreview extends View {
                 if(selected&&theme.is("calendar","plain"))line(c,center-5,top+step-1,center+5,top+step-1);
             }
             if(theme.is("calendar","ruled"))line(c,x,top+step-1,x+width,top+step-1,.5f);
+        }
+    }
+    private void styleWeek(Canvas c,float x,float y,float width,float height,boolean title){
+        if(title){text(c,"Nov 2 - 8",x+width/2,y+7,8,true,Paint.Align.CENTER);y+=16;height-=16;}
+        float step=height/7;
+        for(int i=0;i<7;i++){
+            float top=y+i*step,center=x+Math.min(8,width*.08f);boolean selected=i==4;
+            if(selected&&theme.is("calendar","ruled")){box(c,x,top+1,15,Math.max(3,step-2),true);paint.setColor(Color.WHITE);}
+            else if(selected&&theme.is("calendar","open")){paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.5f,Math.min(6,step*.42f),paint);paint.setColor(Color.WHITE);}
+            text(c,String.valueOf(i+2),center,top+step*.7f,Math.min(8,step*.65f),selected,Paint.Align.CENTER);paint.setColor(Color.BLACK);
+            if(selected&&theme.is("calendar","plain"))line(c,x+2,top+step-1,x+14,top+step-1);
+            line(c,x+22,top+step*.5f,x+width-3,top+step*.5f,.5f);
+            if(theme.is("calendar","ruled"))line(c,x,top+step,x+width,top+step,.5f);
         }
     }
 
@@ -190,6 +213,7 @@ final class ThemePreview extends View {
         else{text(c,"05",12,y+21,theme.is("date","masthead")?34:29);text(c,"November",76,y+8,8);text(c,"Thursday",76,y+19,8);if(theme.is("date","masthead"))line(c,76,y-2,132,y-2);}
     }
     private void calendar(Canvas c,float y,float height){
+        if(weekly){styleWeek(c,10,y,128,height,false);return;}
         float step=height/3;
         for(int r=0;r<3;r++){
             for(int col=0;col<7;col++){

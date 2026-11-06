@@ -35,7 +35,6 @@
     <string name="date_invalid">Choose a valid date between 1900 and 2100.</string>
     <string name="keep_awake">Keep screen awake</string>
     <string name="full_screen">Full screen</string>
-    <string name="large_text">Larger text</string>
     <string name="screen_orientation">Screen orientation</string>
     <string name="orientation_auto">Auto (follow system)</string>
     <string name="orientation_landscape">Force landscape</string>
@@ -121,4 +120,26 @@
     <string name="theme_spaced">Spaced</string>
     <string name="theme_case_normal">Mixed case</string>
     <string name="theme_case_upper">Uppercase</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_display">Display</string>
+    <string name="settings_calendar">Calendar content</string>
+    <string name="calendar_text_size">Calendar text size</string>
+    <string name="text_scale_value" translatable="false">%1$d%%</string>
+    <string name="text_size_sample" translatable="false">墨日历 · Ink Calendar</string>
+    <string name="decrease_text">Decrease text size</string>
+    <string name="increase_text">Increase text size</string>
+    <string name="calendar_view">Default view</string>
+    <string name="month_view">Month view</string>
+    <string name="week_view">Week view</string>
+    <string name="landscape_layout">Landscape layout</string>
+    <string name="layout_classic">Original</string>
+    <string name="layout_balanced">Equal columns</string>
+    <string name="layout_note">Landscape only. Equal columns split the calendar and date/events evenly.</string>
+    <string name="previous_week">Previous week</string>
+    <string name="next_week">Next week</string>
+    <string name="no_events">No events</string>
+    <string name="lunar_short">Lunar</string>
+    <string name="terms_short">Solar terms</string>
+    <string name="holidays_short">Holidays</string>
+    <plurals name="event_count"><item quantity="one">%1$d event</item><item quantity="other">%1$d events</item></plurals>
 </resources>
