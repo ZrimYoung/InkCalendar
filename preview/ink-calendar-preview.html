@@ -12,22 +12,11 @@
     .cursor-interaction { cursor: pointer; }
     button:disabled { cursor: default; }
   </style>
-  <script src="vendor/lucide.js" defer></script>
-  <script src="browser-state.js" defer></script>
-  <script src="calendar-data.js" defer></script>
   <script src="ink-calendar-preview.js" defer></script>
 </head>
 <body>
 <!-- BEGIN PROTOTYPE -->
-<div id="ink-week-settings">
-  <div class="lab-bar">
-    <strong>墨日历 · 交互原型</strong>
-    <div class="lab-pair" aria-label="查看页面"><button class="lab-button cursor-interaction" data-lab-page="settings" aria-pressed="false" type="button">设置</button><button class="lab-button cursor-interaction" data-lab-page="calendar" data-lab-view="month" aria-pressed="true" type="button">月视图</button><button class="lab-button cursor-interaction" data-lab-page="calendar" data-lab-view="week" aria-pressed="false" type="button">周视图</button></div>
-    <div class="lab-pair" aria-label="预览方向"><button class="lab-button cursor-interaction" data-direction="portrait" aria-pressed="false" type="button">竖屏</button><button class="lab-button cursor-interaction" data-direction="landscape" aria-pressed="true" type="button">横屏</button></div>
-  </div>
-  <div class="mock" id="ink-week-app" data-direction="landscape" aria-label="墨日历交互原型"></div>
-  <div class="status" id="ink-week-status" role="status" aria-live="polite">使用示例事项</div>
-</div>
+<main id="ink-calendar" aria-label="墨日历交互原型"></main>
 <!-- END PROTOTYPE -->
 </body>
 </html>

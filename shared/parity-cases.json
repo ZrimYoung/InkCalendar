@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "dates": [
+    { "date": "2026-11-07", "weekStart": "2026-11-02", "gridFirst": "2026-10-26", "gridLast": "2026-12-06" },
+    { "date": "2026-02-17", "weekStart": "2026-02-16", "gridFirst": "2026-01-26", "gridLast": "2026-03-08" },
+    { "date": "1900-01-01", "weekStart": "1900-01-01", "gridFirst": "1900-01-01", "gridLast": "1900-02-11" },
+    { "date": "2100-12-31", "weekStart": "2100-12-27", "gridFirst": "2100-11-29", "gridLast": "2101-01-09" }
+  ],
+  "invalidDates": ["1899-12-31", "2101-01-01", "2026-02-29", "2026-02-30", "2026-13-01", "2026-2-01", "2026-11-07Z"],
+  "calendarFits": [
+    { "natural": 600, "available": 450, "scale": 0.75 },
+    { "natural": 480, "available": 600, "scale": 1 },
+    { "natural": 600, "available": 120, "scale": 0.55 },
+    { "natural": 0, "available": 400, "scale": 1 }
+  ],
+  "events": [
+    { "input": { "date": "2026-11-07", "title": "  Read  ", "time": " 09:30 ", "completed": true }, "title": "Read", "time": "09:30", "completed": true },
+    { "input": { "date": "2026-11-07", "title": "All day", "time": null }, "title": "All day", "time": "", "completed": false },
+    { "input": { "date": "2026-11-07", "title": "\u00a0", "time": "" }, "title": "\u00a0", "time": "", "completed": false },
+    { "input": { "date": "2026-11-07", "title": " \n\t ", "time": "" }, "error": "title_required" },
+    { "input": { "date": "2026-11-07", "title": "X", "time": "24:00" }, "error": "time_invalid" },
+    { "input": { "date": "2026-11-07", "title": "X", "time": "9:30" }, "error": "time_invalid" },
+    { "input": { "date": "2026-11-07", "title": "X", "time": "12:60" }, "error": "time_invalid" },
+    { "input": { "date": "2026-02-30", "title": "X", "time": "" }, "error": "date_invalid" },
+    { "input": { "date": "2026-11-07", "time": "" }, "repeat": { "text": "字", "count": 120 }, "time": "", "completed": false },
+    { "input": { "date": "2026-11-07", "time": "" }, "repeat": { "text": "字", "count": 121 }, "error": "title_too_long" },
+    { "input": { "date": "2026-11-07", "time": "" }, "repeat": { "text": "😀", "count": 61 }, "error": "title_too_long" }
+  ],
+  "milestones": [
+    { "date": "2020-11-05", "today": "2026-11-05", "lunar": false, "kind": "anniversary", "next": "2026-11-05", "years": 6 },
+    { "date": "2020-11-05", "today": "2026-11-06", "lunar": false, "kind": "anniversary", "next": "2027-11-05", "years": 7 },
+    { "date": "2020-02-29", "today": "2026-02-01", "lunar": false, "kind": "anniversary", "next": "2026-02-28", "years": 6 },
+    { "date": "2020-02-29", "today": "2028-02-01", "lunar": false, "kind": "anniversary", "next": "2028-02-29", "years": 8 },
+    { "date": "2030-05-01", "today": "2026-11-05", "lunar": false, "kind": "anniversary", "next": "2030-05-01", "years": 0 },
+    { "date": "2025-01-29", "today": "2026-01-01", "lunar": true, "kind": "anniversary", "next": "2026-02-17", "years": 1 },
+    { "date": "2025-07-25", "today": "2026-01-01", "lunar": true, "kind": "anniversary", "next": "2026-07-14", "years": 1 },
+    { "date": "2024-07-05", "today": "2026-01-01", "lunar": true, "kind": "anniversary", "next": "2026-07-13", "years": 2 },
+    { "date": "2026-11-01", "today": "2026-11-05", "lunar": true, "kind": "countdown", "next": "2026-11-01", "distance": -4 },
+    { "date": "2000-01-01", "today": "2100-12-31", "lunar": false, "kind": "anniversary", "next": null }
+  ],
+  "lunarDates": [
+    { "date": "2026-02-17", "month": 1, "day": 1, "short": "正月" },
+    { "date": "2026-11-07", "month": 9, "day": 29, "short": "廿九" },
+    { "date": "2026-11-09", "month": 10, "day": 1, "short": "十月" }
+  ]
+}

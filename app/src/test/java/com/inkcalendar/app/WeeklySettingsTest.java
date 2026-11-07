@@ -83,6 +83,22 @@ public class WeeklySettingsTest {
         assertTrue(calendar.getLeft()<((View)identity.getParent()).getLeft());
         RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");recreate();ViewGroup root=(ViewGroup)field("root");assertSame(root,main().findViewWithTag("home:identity").getParent());assertSame(root,main().findViewWithTag("home:calendar").getParent());
     }
+    @Test public void landscapeMonthFitsTheViewportAndKeepsDatePlacement()throws Exception{
+        RuntimeEnvironment.setQualifiers("w773dp-h572dp-land-mdpi");prefs.edit().putInt("text_scale",130).putString("landscape_layout","classic").commit();recreate();
+        View decor=main();
+        decor.measure(View.MeasureSpec.makeMeasureSpec(773,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(572,View.MeasureSpec.EXACTLY));decor.layout(0,0,773,572);
+        int[] before=new int[2];main().findViewWithTag("home:identity").getLocationInWindow(before);
+        for(int i=0;i<3;i++){
+            decor.getViewTreeObserver().dispatchOnGlobalLayout();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(773,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(572,View.MeasureSpec.EXACTLY));decor.layout(0,0,773,572);
+        }
+        MonthFitLayout calendar=(MonthFitLayout)main().findViewWithTag("home:calendar");int[] at=new int[2],after=new int[2];calendar.getLocationInWindow(at);main().findViewWithTag("home:identity").getLocationInWindow(after);
+        assertTrue(calendar.contentScale()<1);assertTrue(calendar.contentScale()>=.55f);assertTrue(at[1]+calendar.getHeight()<=572);
+        View surface=calendar.getChildAt(0);assertEquals(calendar.getWidth()-calendar.getPaddingLeft()-calendar.getPaddingRight(),surface.getWidth()*surface.getScaleX(),1);
+        assertArrayEquals(before,after);assertEquals(42,all(calendar).stream().filter(v->v instanceof CalendarDayView).count());
+        prefs.edit().putString("calendar_view","week").commit();recreate();assertEquals(1,((MonthFitLayout)main().findViewWithTag("home:calendar")).contentScale(),.001);
+        RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");prefs.edit().putString("calendar_view","month").commit();recreate();assertEquals(1,((MonthFitLayout)main().findViewWithTag("home:calendar")).contentScale(),.001);
+    }
     @Test public void selectingDaysKeepsTodayAndDateBoundariesRemainUsable()throws Exception{
         prefs.edit().putString("calendar_view","week").commit();recreate();String number=((TextView)field("dayNumber")).getText().toString();
         String other=Dates.addDays(Dates.weekStart(Dates.today()),Dates.today().equals(Dates.weekStart(Dates.today()))?1:0);main().findViewWithTag(other).performClick();assertEquals(other,field("selected"));assertEquals(number,((TextView)field("dayNumber")).getText().toString());

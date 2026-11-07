@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -44,11 +45,14 @@ final class LineIcon extends Drawable {
         } else if (kind == TYPE) {
             canvas.drawLine(4,5,20,5,paint);canvas.drawLine(12,5,12,20,paint);canvas.drawLine(8,20,16,20,paint);
         } else if (kind == MOON) {
-            canvas.drawArc(new RectF(3,3,21,21),55,285,false,paint);canvas.drawArc(new RectF(9,0,24,16),85,170,false,paint);
+            Path moon=new Path();moon.moveTo(20.9f,12.5f);
+            moon.cubicTo(20.6f,17.4f,16.4f,21.1f,11.5f,20.9f);moon.cubicTo(6.6f,20.6f,2.8f,16.4f,3.1f,11.5f);moon.cubicTo(3.3f,6.9f,6.9f,3.3f,11.5f,3.1f);
+            moon.cubicTo(9.6f,6.1f,10,9.2f,12.2f,11.4f);moon.cubicTo(14.4f,13.6f,18,14.2f,20.9f,12.5f);moon.close();canvas.drawPath(moon,paint);
         } else if (kind == TERMS) {
-            canvas.drawLine(12,21,12,10,paint);canvas.drawOval(new RectF(3,5,12,12),paint);canvas.drawOval(new RectF(12,2,21,9),paint);canvas.drawLine(6,21,18,21,paint);
+            Path sprout=new Path();sprout.moveTo(14,9.5f);sprout.lineTo(14,7);sprout.cubicTo(14,4.8f,15.8f,3,18,3);sprout.lineTo(19.5f,3);sprout.quadTo(20,3,20,3.5f);sprout.lineTo(20,5);sprout.cubicTo(20,7.2f,18.2f,9,16,9);sprout.cubicTo(13.8f,9,12,10.8f,12,13);sprout.cubicTo(12,15,13,16,13,18);sprout.cubicTo(13,19.1f,12.6f,20.2f,12,21);
+            sprout.moveTo(4,9);sprout.cubicTo(7.3f,6.5f,12,8.9f,12,13);sprout.cubicTo(8.7f,15.5f,4,13.1f,4,9);sprout.close();canvas.drawPath(sprout,paint);canvas.drawLine(5,21,19,21,paint);
         } else if (kind == FLAG) {
-            canvas.drawLine(5,3,5,22,paint);canvas.drawRect(5,4,20,13,paint);
+            Path flag=new Path();flag.moveTo(4,22);flag.lineTo(4,4);flag.quadTo(4,3.5f,4.4f,3.2f);flag.cubicTo(5.4f,2.4f,6.7f,2,8,2);flag.cubicTo(11,2,13,4,15.3f,4);flag.quadTo(17.3f,4,18.4f,3.2f);flag.quadTo(20,2.2f,20,4);flag.lineTo(20,14);flag.quadTo(20,14.5f,19.6f,14.8f);flag.cubicTo(18.6f,15.6f,17.3f,16,16,16);flag.cubicTo(13,16,11,14,8,14);flag.cubicTo(6.5f,14,5.1f,14.5f,4,15.5f);canvas.drawPath(flag,paint);
         } else if (kind == LANGUAGE) {
             canvas.drawLine(3,7,15,7,paint);canvas.drawLine(9,3,9,7,paint);canvas.drawLine(5,10,13,17,paint);canvas.drawLine(13,7,4,18,paint);
             canvas.drawLine(14,21,18,11,paint);canvas.drawLine(18,11,22,21,paint);canvas.drawLine(16,17,20,17,paint);

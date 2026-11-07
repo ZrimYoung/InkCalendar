@@ -15,6 +15,7 @@ source = ''.join((base / name).read_text(encoding='utf-8') for name in
 characters = ''.join(sorted(set(source + ''.join(chr(i) for i in range(32, 127)))))
 specs = [('InkReading', 'NewsprintReading-Regular.ttf', 400),
          ('InkOriginal', 'NewsprintDisplay-Regular.ttf', 400),
+         ('InkOriginal', 'NewsprintDisplay-Semibold.ttf', 700),
          ('InkOriginal', 'NewsprintDisplay-Black.ttf', 900),
          ('InkCJKSerif', 'NotoSerifSC-Regular.otf', 400),
          ('InkCJKSans', 'NotoSansSC-Regular.otf', 400)]

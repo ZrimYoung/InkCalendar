@@ -99,8 +99,8 @@
     <string name="theme_tracking">Letter spacing</string>
     <string name="theme_caps">Heading case</string>
     <string name="theme_split">Side by side</string>
-    <string name="theme_masthead">Large column</string>
-    <string name="theme_tiles">Digit tiles</string>
+    <string name="theme_masthead">Masthead date</string>
+    <string name="theme_tiles">Offset digits</string>
     <string name="theme_reverse">Date on right</string>
     <string name="theme_center">Centered</string>
     <string name="theme_open">Open · circle</string>
@@ -108,7 +108,7 @@
     <string name="theme_plain">Open · underline</string>
     <string name="theme_timeline">Time on left</string>
     <string name="theme_stacked">Stacked</string>
-    <string name="theme_cards">Outlined cards</string>
+    <string name="theme_cards">Dashed separators</string>
     <string name="theme_ledger">Time on right</string>
     <string name="theme_bare">No border</string>
     <string name="theme_outline">Outlined</string>
@@ -132,9 +132,8 @@
     <string name="month_view">Month view</string>
     <string name="week_view">Week view</string>
     <string name="landscape_layout">Landscape layout</string>
-    <string name="layout_classic">Original</string>
+    <string name="layout_classic">Primary / secondary</string>
     <string name="layout_balanced">Equal columns</string>
-    <string name="layout_note">Landscape only. Equal columns split the calendar and date/events evenly.</string>
     <string name="previous_week">Previous week</string>
     <string name="next_week">Next week</string>
     <string name="no_events">No events</string>

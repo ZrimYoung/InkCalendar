@@ -12,11 +12,10 @@ import java.util.Map;
 /** Static fonts work on API 19. Cache each asset, and apply the Chinese partner per text run. */
 final class ThemeFonts {
     private static final Map<String,Typeface> CACHE=new HashMap<>();
-    private static final String[] FILES={"NewsprintDisplay","InkGeist","InkBaskerville","InkFraunces","InkSlab","InkSpace","InkAtkinson"};
     private final AssetManager assets;
     ThemeFonts(AssetManager assets){this.assets=assets;}
     private Typeface asset(String name){synchronized(CACHE){Typeface face=CACHE.get(name);if(face==null){face=Typeface.createFromAsset(assets,"fonts/"+name);CACHE.put(name,face);}return face;}}
-    Typeface latin(String id,boolean bold){int i=Math.max(0,ThemeConfig.index(ThemeConfig.FONTS,id));return asset(FILES[i]+(i==0?(bold?"-Black.ttf":"-Regular.ttf"):(bold?"-Bold.ttf":"-Regular.ttf")));}
+    Typeface latin(String id,boolean bold){int i=Math.max(0,ThemeConfig.index(ThemeConfig.FONTS,id));return asset((bold?SharedThemeCatalog.FONT_BOLD:SharedThemeCatalog.FONT_REGULAR)[i]);}
     Typeface label(String id){return "original".equals(id)?asset("NewsprintDisplay-Semibold.ttf"):latin(id,true);}
     Typeface reading(String id){return "original".equals(id)?asset("NewsprintReading-Regular.ttf"):latin(id,false);}
     Typeface chinese(String id){ThemeConfig config=new ThemeConfig();config.font=id;return asset(config.sans()?"NotoSansSC-Regular.otf":"NotoSerifSC-Regular.otf");}

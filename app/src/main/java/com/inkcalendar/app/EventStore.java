@@ -53,7 +53,7 @@ final class EventStore extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase(); db.beginTransaction();
         try {
             if (item.pinned) try (Cursor c = db.rawQuery("SELECT COUNT(*) FROM milestones WHERE pinned=1 AND _id<>?",new String[]{Long.toString(item.id)})) {
-                c.moveToFirst(); if(c.getInt(0)>=2) throw new IllegalArgumentException("pin_limit");
+                c.moveToFirst(); if(c.getInt(0)>=SharedThemeCatalog.PINNED_MILESTONES) throw new IllegalArgumentException("pin_limit");
             }
             ContentValues v=new ContentValues();v.put("day",item.date);v.put("title",item.title);v.put("kind",item.kind);v.put("lunar",item.lunar?1:0);v.put("pinned",item.pinned?1:0);
             if(item.id==0) db.insertOrThrow("milestones",null,v);

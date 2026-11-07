@@ -12,7 +12,7 @@ final class ChoiceGrid extends ViewGroup {
 
     ChoiceGrid(Context context){
         super(context);float density=getResources().getDisplayMetrics().density;
-        minimum=Math.round(128*density);maximum=Math.round(208*density);gap=Math.round(8*density);
+        minimum=Math.round(SharedThemeCatalog.CHOICE_MIN*density);maximum=Math.round(SharedThemeCatalog.CHOICE_MAX*density);gap=Math.round(SharedThemeCatalog.CHOICE_GAP*density);
         setPadding(0,gap/2,0,gap/2);
     }
 

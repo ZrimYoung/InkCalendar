@@ -1,0 +1,17 @@
+{
+  "name": "ink-calendar-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "packageManager": "npm@10.9.2",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs",
+    "test": "node ../tools/generate-shared.mjs --check && node --test tests/*.test.mjs",
+    "generate": "node ../tools/generate-shared.mjs"
+  },
+  "dependencies": { "lucide": "1.17.0" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}

@@ -74,6 +74,7 @@ public final class MainActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private String today, selected, displayedMonth;
     private LinearLayout root, monthGrid, agenda;
+    private MonthFitLayout calendarFit;
     private TextView monthTitle, dayNumber, dateTitle, dayTitle;
     private ImageButton previous, next;
     private Typeface serif, display, headline, labelFont, reading;
@@ -203,16 +204,16 @@ public final class MainActivity extends Activity {
         handler.postDelayed(midnight, Dates.untilNextDay(System.currentTimeMillis(), TimeZone.getDefault()));
     }
     private void applyScreenOrientation() {
-        String mode = preferences.getString("orientation", "auto");
+        String mode = preferences.getString("orientation",SharedThemeCatalog.DEFAULT_ORIENTATION);
         int requested = "landscape".equals(mode) ? ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             : "portrait".equals(mode) ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         if (getRequestedOrientation() != requested) setRequestedOrientation(requested);
     }
     private void applyDisplay() {
-        if (preferences.getBoolean("awake", true)) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (preferences.getBoolean("awake",SharedThemeCatalog.DEFAULT_AWAKE)) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        boolean full = preferences.getBoolean("full", true);
+        boolean full = preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL);
         if (full) getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().getDecorView().setSystemUiVisibility(full ? View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN : 0);
@@ -220,7 +221,7 @@ public final class MainActivity extends Activity {
 
     @SuppressWarnings("deprecation")
     private void applyLanguage() {
-        displayLocale = "en".equals(preferences.getString("language", "zh")) ? Locale.US : Locale.SIMPLIFIED_CHINESE;
+        displayLocale = "en".equals(preferences.getString("language",SharedThemeCatalog.DEFAULT_LANGUAGE)) ? Locale.US : Locale.SIMPLIFIED_CHINESE;
         Locale.setDefault(displayLocale);
         Configuration configuration = new Configuration(getResources().getConfiguration());
         configuration.setLocale(displayLocale);
@@ -263,11 +264,13 @@ public final class MainActivity extends Activity {
             selected=Dates.today();today=selected;displayedMonth=Dates.month(selected);render();
         }));top.addView(icon(LineIcon.SETTINGS,R.string.settings,this::showSettings));root.addView(top);
         addDivider(root,theme.ruleWidth(),12);
-        boolean desk=preferences.getBoolean("desk",false);
-        boolean wide=!desk&&getResources().getConfiguration().screenWidthDp>=640&&getResources().getConfiguration().orientation==2;
+        boolean desk=preferences.getBoolean("desk",SharedThemeCatalog.DEFAULT_DESK);
+        boolean wide=!desk&&getResources().getConfiguration().screenWidthDp>=SharedThemeCatalog.WIDE_LAYOUT_MIN&&getResources().getConfiguration().orientation==2;
         LinearLayout identity=buildIdentity(wide,desk);
         deskDetails=stableText("",16,false);if(desk)identity.addView(deskDetails);
-        LinearLayout calendarPanel=new MonthSwipeLayout(this,this::moveCalendar);calendarPanel.setTag("home:calendar");calendarPanel.setVisibility(desk?View.GONE:View.VISIBLE);
+        LinearLayout calendarPanel=new MonthSwipeLayout(this,this::moveCalendar);calendarPanel.setTag("home:calendar-content");calendarPanel.setVisibility(desk?View.GONE:View.VISIBLE);
+        calendarFit=new MonthFitLayout(this);calendarFit.setTag("home:calendar");calendarFit.addView(calendarPanel,new FrameLayout.LayoutParams(-1,-2));calendarFit.setVisibility(desk?View.GONE:View.VISIBLE);
+        calendarFit.setFitting(!desk&&!weekView()&&getResources().getConfiguration().orientation==Configuration.ORIENTATION_LANDSCAPE);
         LinearLayout nav=row();previous=icon(LineIcon.PREVIOUS,weekView()?R.string.previous_week:R.string.previous_month,()->moveCalendar(-1));next=icon(LineIcon.NEXT,weekView()?R.string.next_week:R.string.next_month,()->moveCalendar(1));
         monthTitle=stableText("",20,true);monthTitle.setGravity(Gravity.CENTER);monthTitle.setMinimumHeight(dp(48));monthTitle.setFocusable(true);monthTitle.setContentDescription(getString(R.string.jump_date));
         monthTitle.setBackground(background(PAPER,0));monthTitle.setTextColor(interactiveText(PAPER,INK));
@@ -277,18 +280,18 @@ public final class MainActivity extends Activity {
         milestonePanel=column();agenda=column();agenda.setPadding(0,dp(10),0,0);
         LinearLayout agendaArea=column();addDivider(agendaArea,theme.ruleWidth(),12);agendaArea.addView(agenda);
         identity.setTag("home:identity");agendaArea.setTag("home:agenda");
-        if(wide&&"balanced".equals(preferences.getString("landscape_layout","classic"))){
+        if(wide&&"balanced".equals(preferences.getString("landscape_layout",SharedThemeCatalog.DEFAULT_LAYOUT))){
             LinearLayout body=row();body.setGravity(Gravity.TOP);LinearLayout side=column();side.addView(identity);side.addView(milestonePanel);side.addView(agendaArea);
             LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1),right=new LinearLayout.LayoutParams(0,-2,1);right.leftMargin=dp(24);
-            if(theme.is("flow","agenda-first")){body.addView(side,left);body.addView(calendarPanel,right);}else{body.addView(calendarPanel,left);body.addView(side,right);}root.addView(body);
+            if(theme.is("flow","agenda-first")){body.addView(side,left);body.addView(calendarFit,right);}else{body.addView(calendarFit,left);body.addView(side,right);}root.addView(body);
         }else if(wide&&!theme.is("flow","agenda-first")){
             LinearLayout body=row();body.setGravity(Gravity.TOP);LinearLayout left=column();left.setPadding(0,0,dp(12),0);left.addView(identity);left.addView(milestonePanel);left.addView(agendaArea);
-            body.addView(left,new LinearLayout.LayoutParams(0,-2,.36f));calendarPanel.setPadding(dp(12),0,0,0);body.addView(calendarPanel,new LinearLayout.LayoutParams(0,-2,.64f));root.addView(body);
+            body.addView(left,new LinearLayout.LayoutParams(0,-2,.36f));calendarFit.setPadding(dp(12),0,0,0);body.addView(calendarFit,new LinearLayout.LayoutParams(0,-2,.64f));root.addView(body);
         }else if(wide){
             LinearLayout upper=row();upper.setGravity(Gravity.TOP);LinearLayout left=column();left.addView(identity);left.addView(milestonePanel);upper.addView(left,new LinearLayout.LayoutParams(0,-2,.4f));
-            LinearLayout.LayoutParams right=new LinearLayout.LayoutParams(0,-2,.6f);right.leftMargin=dp(18);upper.addView(agendaArea,right);root.addView(upper);root.addView(calendarPanel);
+            LinearLayout.LayoutParams right=new LinearLayout.LayoutParams(0,-2,.6f);right.leftMargin=dp(18);upper.addView(agendaArea,right);root.addView(upper);root.addView(calendarFit);
         }else{
-            root.addView(identity);if(theme.is("flow","agenda-first")){root.addView(milestonePanel);root.addView(agendaArea);root.addView(calendarPanel);}else{root.addView(calendarPanel);root.addView(milestonePanel);root.addView(agendaArea);}
+            root.addView(identity);if(theme.is("flow","agenda-first")){root.addView(milestonePanel);root.addView(agendaArea);root.addView(calendarFit);}else{root.addView(calendarFit);root.addView(milestonePanel);root.addView(agendaArea);}
         }
         render();
     }
@@ -296,14 +299,18 @@ public final class MainActivity extends Activity {
     private FitDateView bigDate(int size){FitDateView view=new FitDateView(this);view.setTypeface(headline);view.setTextColor(INK);view.maximum(size*textScale);return view;}
     private LinearLayout buildIdentity(boolean wide,boolean desk){
         LinearLayout identity=column();identity.setPadding(0,dp(8),0,dp(16));
-        dayNumber=bigDate(desk?120:theme.is("date","masthead")?112:theme.is("date","center")?112:84);
+        dayNumber=bigDate(desk?120:theme.is("date","masthead")?132:theme.is("date","center")?112:84);
         dayNumber.setText(String.format(Locale.US,"%02d",Integer.parseInt(today.substring(8))));
         dateTitle=stableText("",16,false);dayTitle=stableText("",21,false);headingStyle(dayTitle);
         LinearLayout words=column();words.addView(dateTitle);words.addView(dayTitle);firstDigit=null;secondDigit=null;
         if(theme.is("date","tiles")){
-            LinearLayout tiles=row();firstDigit=bigDate(82);secondDigit=bigDate(82);
-            for(TextView digit:new TextView[]{firstDigit,secondDigit}){digit.setGravity(Gravity.CENTER);digit.setBackground(shape(PAPER,2));LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(0,dp(116*textScale),1);bounds.setMargins(dp(3),0,dp(3),0);tiles.addView(digit,bounds);}
+            LinearLayout tiles=row();tiles.setPadding(dp(3),0,dp(3),dp(18*textScale));firstDigit=bigDate(96);secondDigit=bigDate(96);
+            for(TextView digit:new TextView[]{firstDigit,secondDigit}){digit.setGravity(Gravity.CENTER);LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(0,dp(108*textScale),1);tiles.addView(digit,bounds);}secondDigit.setTranslationY(dp(18*textScale));
             identity.addView(tiles);words.setPadding(0,dp(10),0,0);identity.addView(words);
+        }else if(theme.is("date","masthead")){
+            words.removeAllViews();dateTitle.setTextSize(14*textScale);dateTitle.setPadding(0,0,0,dp(6));dateTitle.setBackground(bottomRule());
+            dayNumber.setGravity(Gravity.START);dayTitle.setTextSize(16*textScale);dayTitle.setTextColor(PAPER);dayTitle.setBackgroundColor(INK);dayTitle.setGravity(Gravity.CENTER);dayTitle.setPadding(dp(8),dp(4),dp(8),dp(4));
+            identity.addView(dateTitle,new LinearLayout.LayoutParams(-1,-2));identity.addView(dayNumber,new LinearLayout.LayoutParams(-1,-2));identity.addView(dayTitle,new LinearLayout.LayoutParams(-1,-2));
         }else if(theme.is("date","center")){
             dayNumber.setGravity(Gravity.CENTER);dateTitle.setGravity(Gravity.CENTER);dayTitle.setGravity(Gravity.CENTER);identity.addView(dayNumber,new LinearLayout.LayoutParams(-1,-2));identity.addView(words);
         }else if(wide&&!theme.is("date","reverse")){
@@ -321,7 +328,7 @@ public final class MainActivity extends Activity {
         selected = Dates.month(today).equals(target) ? today : target;
         render();
     }
-    private boolean weekView(){return "week".equals(preferences.getString("calendar_view","month"));}
+    private boolean weekView(){return "week".equals(preferences.getString("calendar_view",SharedThemeCatalog.DEFAULT_VIEW));}
     private void moveCalendar(int by){
         if(!weekView()){moveMonth(by);return;}
         String target=Dates.addDays(selected,by*7);
@@ -389,7 +396,7 @@ public final class MainActivity extends Activity {
                 if(theme.is("calendar","ruled"))monthGrid.addView(rule(RULE),new LinearLayout.LayoutParams(-1,dp(1)));
             }
             }
-            boolean desk=preferences.getBoolean("desk",false);
+            boolean desk=preferences.getBoolean("desk",SharedThemeCatalog.DEFAULT_DESK);
             boolean upcoming = desk || selected.equals(today);
             LinearLayout agendaHeader = row();
             TextView title = stableText(upcoming ? getString(R.string.upcoming).toUpperCase(displayLocale) : shortDate(selected), 14, true);
@@ -403,7 +410,7 @@ public final class MainActivity extends Activity {
             agendaHeader.addView(icon(LineIcon.ADD, R.string.add_event, () -> showEditor(0, selected, "", "")));
             agenda.addView(agendaHeader);
             String start=desk?today:selected;
-            List<Event> events = visibleEvents(start, upcoming ? boundedEnd(start, 6) : start, desk || preferences.getBoolean("hide_done",false));
+            List<Event> events = visibleEvents(start, upcoming ? boundedEnd(start, 6) : start, desk || preferences.getBoolean("hide_done",SharedThemeCatalog.DEFAULT_HIDE_DONE));
             if (events.isEmpty()) {
                 TextView empty = label(upcoming ? R.string.empty_upcoming : R.string.empty_day, 16, false);
                 empty.setLineSpacing(dp(6), 1); agenda.addView(empty);
@@ -418,7 +425,7 @@ public final class MainActivity extends Activity {
         }
     }
     private void renderWeek(String start){
-        List<Event> items=visibleEvents(start,boundedEnd(start,6),preferences.getBoolean("hide_done",false));
+        List<Event> items=visibleEvents(start,boundedEnd(start,6),preferences.getBoolean("hide_done",SharedThemeCatalog.DEFAULT_HIDE_DONE));
         String[] labels=english()?new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}:new String[]{"周一","周二","周三","周四","周五","周六","周日"};
         for(int i=0;i<7;i++){
             final String date=Dates.addDays(start,i);boolean valid=date.compareTo("1900-01-01")>=0&&date.compareTo("2100-12-31")<=0;
@@ -450,7 +457,7 @@ public final class MainActivity extends Activity {
         titleInput = input(title, R.string.event_hint);
         titleInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         titleInput.setTypeface(reading); titleInput.setMinLines(3); titleInput.setGravity(Gravity.TOP | Gravity.START);
-        titleInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});
+        titleInput.setFilters(new InputFilter[]{new InputFilter.LengthFilter(SharedThemeCatalog.TITLE_LENGTH)});
         titleInput.setContentDescription(getString(R.string.event_title)); form.addView(titleInput);
         fieldLabel(form, R.string.time_optional);
         timeInput = input(time, 0); timeInput.setHint("09:30"); timeInput.setSingleLine(true);
@@ -595,8 +602,8 @@ public final class MainActivity extends Activity {
             window.setBackgroundDrawable(shape(PAPER, 0)); window.setWindowAnimations(0);
             window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-            if (preferences.getBoolean("awake", true)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            if (preferences.getBoolean("full", true)) {
+            if (preferences.getBoolean("awake",SharedThemeCatalog.DEFAULT_AWAKE)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if (preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL)) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
                 window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN);
             }
@@ -632,7 +639,6 @@ public final class MainActivity extends Activity {
         left.addView(settingsSegments("orientation",new String[]{"auto","landscape","portrait"},new String[]{getString(R.string.orientation_auto),getString(R.string.orientation_landscape),getString(R.string.orientation_portrait)},draft.orientation,v->draft.orientation=v));
         settingsLabel(left,R.string.landscape_layout,LineIcon.LAYOUT);
         left.addView(settingsSegments("layout",new String[]{"classic","balanced"},new String[]{getString(R.string.layout_classic),getString(R.string.layout_balanced)},draft.layout,v->draft.layout=v));
-        settingsNote(left,R.string.layout_note);
         left.addView(settingsToggle("full",R.string.full_screen,LineIcon.DISPLAY,draft.full,v->draft.full=v));
         left.addView(settingsToggle("awake",R.string.keep_awake,LineIcon.SUN,draft.awake,v->draft.awake=v));
         settingsSection(right,R.string.settings_calendar,LineIcon.TODAY);
@@ -647,7 +653,7 @@ public final class MainActivity extends Activity {
         settingsSection(right,R.string.language,LineIcon.LANGUAGE);
         right.addView(settingsSegments("language",new String[]{"zh","en"},new String[]{"简体中文","English"},draft.language,v->draft.language=v));
         settingsNote(right,R.string.settings_note);
-        boolean wide=getResources().getConfiguration().orientation==2&&getResources().getConfiguration().screenWidthDp>=640;
+        boolean wide=getResources().getConfiguration().orientation==2&&getResources().getConfiguration().screenWidthDp>=SharedThemeCatalog.WIDE_LAYOUT_MIN;
         LinearLayout body=wide?row():column();body.setGravity(Gravity.TOP);
         if(wide){body.addView(left,weight());LinearLayout.LayoutParams bounds=weight();bounds.leftMargin=dp(28);body.addView(right,bounds);}else{body.addView(left);body.addView(right);}form.addView(body);
         settingsHeader.addView(icon(LineIcon.CANCEL,R.string.cancel,()->settingsDialog.dismiss()));
@@ -684,20 +690,19 @@ public final class MainActivity extends Activity {
     private CheckBox settingsTile(String key,int title,int shortTitle,int kind,boolean checked,ToggleChanged changed){
         CheckBox tile=check(shortTitle,checked);tile.setContentDescription(getString(title));tile.setTag("setting:"+key);tile.setButtonDrawable(null);tile.setTextSize(14);tile.setMinWidth(0);tile.setMinimumWidth(0);tile.setMinHeight(dp(68));tile.setPadding(dp(2),dp(8),dp(2),dp(8));tile.setGravity(Gravity.CENTER);
         tile.setCompoundDrawables(null,settingIcon(kind,checked),null,null);tile.setCompoundDrawablePadding(dp(5));
-        StateListDrawable states=new StateListDrawable();states.addState(new int[]{android.R.attr.state_checked},shape(INK,1));states.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));states.addState(new int[]{},shape(PAPER,1));tile.setBackground(states);
-        tile.setTextColor(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{PAPER,INK}));tile.setOnCheckedChangeListener((b,v)->{tile.setCompoundDrawables(null,settingIcon(kind,v),null,null);changed.accept(v);});return tile;
+        StateListDrawable states=new StateListDrawable();states.addState(new int[]{android.R.attr.state_checked},shape(INK,1));states.addState(new int[]{android.R.attr.state_pressed},shape(INK,1));states.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));states.addState(new int[]{},shape(PAPER,1));tile.setBackground(states);
+        tile.setTextColor(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{android.R.attr.state_pressed},new int[]{}},new int[]{PAPER,PAPER,INK}));tile.setOnCheckedChangeListener((b,v)->{tile.setCompoundDrawables(null,settingIcon(kind,v),null,null);changed.accept(v);});return tile;
     }
     private void settingsScale(LinearLayout parent,DisplayOptions draft){
         LinearLayout caption=row();TextView title=label(R.string.calendar_text_size,15,false);title.setTextSize(15);title.setCompoundDrawables(settingIcon(LineIcon.TYPE),null,null,null);title.setCompoundDrawablePadding(dp(8));caption.addView(title,weight());
         TextView value=text(getString(R.string.text_scale_value,draft.scale),15,false);value.setTextSize(15);value.setTag("setting:scale-value");caption.addView(value);caption.setPadding(0,dp(14),0,dp(8));parent.addView(caption);
         LinearLayout controls=row();Button minus=button("−",()->{}),plus=button("+",()->{});minus.setContentDescription(getString(R.string.decrease_text));plus.setContentDescription(getString(R.string.increase_text));minus.setTextSize(24);plus.setTextSize(24);
-        SeekBar slider=new SeekBar(this);slider.setTag("setting:scale");slider.setContentDescription(getString(R.string.calendar_text_size));slider.setMax(40);slider.setProgress(draft.scale-90);
-        slider.getProgressDrawable().mutate().setColorFilter(INK,android.graphics.PorterDuff.Mode.SRC_IN);slider.getThumb().mutate().setColorFilter(INK,android.graphics.PorterDuff.Mode.SRC_IN);
+        SeekBar slider=new InkSeekBar(this);slider.setTag("setting:scale");slider.setContentDescription(getString(R.string.calendar_text_size));slider.setMax(SharedThemeCatalog.SCALE_MAX-SharedThemeCatalog.SCALE_MIN);slider.setProgress(draft.scale-SharedThemeCatalog.SCALE_MIN);
         TextView sample=text(getString(R.string.text_size_sample),18,false);sample.setTag("setting:scale-sample");sample.setPadding(0,dp(8),0,dp(12));
-        Runnable refresh=()->{value.setText(getString(R.string.text_scale_value,draft.scale));slider.setProgress(draft.scale-90);sample.setTextSize(18*draft.scale/100f);minus.setEnabled(draft.scale>90);plus.setEnabled(draft.scale<130);};
-        minus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale-5);refresh.run();});plus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale+5);refresh.run();});
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){if(fromUser){draft.scale=90+Math.round(progress/5f)*5;refresh.run();}}public void onStartTrackingTouch(SeekBar bar){}public void onStopTrackingTouch(SeekBar bar){}});
-        controls.addView(minus,new LinearLayout.LayoutParams(dp(48),dp(48)));LinearLayout.LayoutParams middle=weight();middle.leftMargin=dp(8);middle.rightMargin=dp(8);controls.addView(slider,middle);controls.addView(plus,new LinearLayout.LayoutParams(dp(48),dp(48)));parent.addView(controls);parent.addView(sample);refresh.run();
+        Runnable refresh=()->{value.setText(getString(R.string.text_scale_value,draft.scale));slider.setProgress(draft.scale-SharedThemeCatalog.SCALE_MIN);sample.setTextSize(18*draft.scale/100f);minus.setEnabled(draft.scale>SharedThemeCatalog.SCALE_MIN);plus.setEnabled(draft.scale<SharedThemeCatalog.SCALE_MAX);};
+        minus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale-SharedThemeCatalog.SCALE_STEP);refresh.run();});plus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale+SharedThemeCatalog.SCALE_STEP);refresh.run();});
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){if(fromUser){draft.scale=SharedThemeCatalog.SCALE_MIN+Math.round(progress/(float)SharedThemeCatalog.SCALE_STEP)*SharedThemeCatalog.SCALE_STEP;refresh.run();}}public void onStartTrackingTouch(SeekBar bar){}public void onStopTrackingTouch(SeekBar bar){}});
+        controls.addView(minus,new LinearLayout.LayoutParams(dp(44),dp(44)));LinearLayout.LayoutParams middle=weight();middle.leftMargin=dp(12);middle.rightMargin=dp(12);controls.addView(slider,middle);controls.addView(plus,new LinearLayout.LayoutParams(dp(44),dp(44)));parent.addView(controls);parent.addView(sample);refresh.run();
     }
     private void settingActions(LinearLayout form,Runnable cancel,Runnable save){LinearLayout head=(LinearLayout)form.getChildAt(0);head.addView(icon(LineIcon.CANCEL,R.string.cancel,cancel));head.addView(icon(LineIcon.SAVE,R.string.save,save));}
     private void themeSection(LinearLayout form,int title){TextView label=label(title,17,true);label.setPadding(0,dp(20),0,dp(8));form.addView(label);}
@@ -791,9 +796,9 @@ public final class MainActivity extends Activity {
         String end=Dates.addDays(start,days);return end.compareTo("2100-12-31")>0?"2100-12-31":end;
     }
     private String dayAnnotation(String date) {
-        boolean holidays=preferences.getBoolean("holidays",true);
+        boolean holidays=preferences.getBoolean("holidays",SharedThemeCatalog.DEFAULT_HOLIDAYS);
         if(holidays && !Holidays.label(date,english()).isEmpty()) return Holidays.label(date,english());
-        if(!english() && preferences.getBoolean("terms",true) && !almanac.term(date).isEmpty())return almanac.term(date);
+        if(!english() && preferences.getBoolean("terms",SharedThemeCatalog.DEFAULT_TERMS) && !almanac.term(date).isEmpty())return almanac.term(date);
         if(holidays) {
             String name=almanac.festival(date,english());
             if(!name.isEmpty()) {
@@ -804,14 +809,14 @@ public final class MainActivity extends Activity {
             }
         }
         Almanac.LunarDate lunar=almanac.lunar(date);
-        return !english() && preferences.getBoolean("lunar",true) && lunar!=null?lunar.shortName():"";
+        return !english() && preferences.getBoolean("lunar",SharedThemeCatalog.DEFAULT_LUNAR) && lunar!=null?lunar.shortName():"";
     }
     private String dateDetails(String date) {
         List<String> details=new ArrayList<>();
         Almanac.LunarDate lunar=almanac.lunar(date);
-        if(!english() && preferences.getBoolean("lunar",true) && lunar!=null)details.add(lunar.fullName());
-        if(!english() && preferences.getBoolean("terms",true) && !almanac.term(date).isEmpty())details.add(almanac.term(date));
-        if(preferences.getBoolean("holidays",true)) {
+        if(!english() && preferences.getBoolean("lunar",SharedThemeCatalog.DEFAULT_LUNAR) && lunar!=null)details.add(lunar.fullName());
+        if(!english() && preferences.getBoolean("terms",SharedThemeCatalog.DEFAULT_TERMS) && !almanac.term(date).isEmpty())details.add(almanac.term(date));
+        if(preferences.getBoolean("holidays",SharedThemeCatalog.DEFAULT_HOLIDAYS)) {
             String festival=almanac.festival(date,english()),status=Holidays.label(date,english());
             if(!festival.isEmpty())details.add(festival);
             if(!status.isEmpty())details.add(status);
@@ -844,10 +849,10 @@ public final class MainActivity extends Activity {
             if(theme.is("agenda","ledger")){meta.setGravity(Gravity.END);title.rightMargin=dp(8);body.addView(content,title);body.addView(meta,time);}
             else{title.leftMargin=dp(10);body.addView(meta,time);body.addView(content,title);}
         }else{body.addView(meta);body.addView(content);}
-        body.setBackground(background(PAPER,theme.is("agenda","cards")?1:0));body.setMinimumHeight(dp(64));body.setFocusable(true);
+        body.setBackground(background(PAPER,0));body.setMinimumHeight(dp(64));body.setFocusable(true);
         body.setContentDescription(when+", "+event.title+", "+getString(R.string.edit_event));body.setOnClickListener(v->showEditor(event.id,event.date,event.title,event.time));
-        item.addView(body,weight());LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,-2);bounds.bottomMargin=dp(theme.is("agenda","cards")?8:0);parent.addView(item,bounds);
-        if(theme.is("agenda","stacked")||theme.is("agenda","ledger")){View line=rule(INK);if(theme.is("agenda","ledger"))line.setBackground(new InkRule(getResources().getDisplayMetrics().density,true,false));parent.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));}
+        item.addView(body,weight());LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,-2);parent.addView(item,bounds);
+        if(theme.is("agenda","stacked")||theme.is("agenda","ledger")||theme.is("agenda","cards")){View line=rule(INK);if(!theme.is("agenda","stacked"))line.setBackground(new InkRule(getResources().getDisplayMetrics().density,true,false));parent.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));}
     }
     private void refreshOpenLists() {
         if(futureDialog!=null && futureDialog.isShowing() && refreshFuture!=null)refreshFuture.run();
@@ -861,8 +866,8 @@ public final class MainActivity extends Activity {
             RadioButton choice=new RadioButton(this);choice.setId(View.generateViewId());choice.setTag(days);choice.setText(getString(days==7?R.string.next_7:R.string.next_30));styleChoice(choice,true);
             ranges.addView(choice,new RadioGroup.LayoutParams(0,-2,1));
         }
-        ranges.check(ranges.findViewWithTag(preferences.getInt("future_days",7)).getId());form.addView(ranges);
-        CheckBox hide=check(R.string.hide_completed,preferences.getBoolean("hide_done",false));form.addView(hide);
+        ranges.check(ranges.findViewWithTag(preferences.getInt("future_days",SharedThemeCatalog.DEFAULT_FUTURE_DAYS)).getId());form.addView(ranges);
+        CheckBox hide=check(R.string.hide_completed,preferences.getBoolean("hide_done",SharedThemeCatalog.DEFAULT_HIDE_DONE));form.addView(hide);
         TextView range=stableText("",13,false);form.addView(range);form.addView(list);
         refreshFuture=() -> {
             list.removeAllViews();String end=boundedEnd(today,((Integer)ranges.findViewById(ranges.getCheckedRadioButtonId()).getTag())-1);
@@ -931,7 +936,7 @@ public final class MainActivity extends Activity {
     private int selectedMilestoneKind() { return (Integer)milestoneKinds.findViewById(milestoneKinds.getCheckedRadioButtonId()).getTag(); }
     private void showMilestoneEditor(Milestone existing) {
         boolean isNew=existing==null || existing.id==0;
-        milestoneDraft=existing==null?new Milestone(0,today,"draft",Milestone.ANNIVERSARY,false,pinnedCount()<2):existing;
+        milestoneDraft=existing==null?new Milestone(0,today,"draft",Milestone.ANNIVERSARY,false,pinnedCount()<SharedThemeCatalog.PINNED_MILESTONES):existing;
         milestoneDate=milestoneDraft.date;
         milestoneEditor=new Dialog(this);milestoneEditor.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form=pageForm(isNew?R.string.add_milestone:R.string.edit_milestone);
@@ -944,7 +949,7 @@ public final class MainActivity extends Activity {
             }));showPage(confirm,page);
         }));
         fieldLabel(form,R.string.milestone_name);milestoneTitle=input(existing==null?"":existing.title,R.string.event_hint);
-        milestoneTitle.setFilters(new InputFilter[]{new InputFilter.LengthFilter(120)});milestoneTitle.setSingleLine(true);
+        milestoneTitle.setFilters(new InputFilter[]{new InputFilter.LengthFilter(SharedThemeCatalog.TITLE_LENGTH)});milestoneTitle.setSingleLine(true);
         milestoneTitle.setContentDescription(getString(R.string.milestone_name));form.addView(milestoneTitle);
         fieldLabel(form,R.string.milestone_type);milestoneKinds=new RadioGroup(this);
         for(int kind:new int[]{Milestone.ANNIVERSARY,Milestone.COUNTDOWN}) {
