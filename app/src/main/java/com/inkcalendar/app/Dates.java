@@ -30,6 +30,7 @@ final class Dates {
     static String addMonths(String date, int months) {
         Calendar c = parse(date); c.add(Calendar.MONTH, months); return key(c);
     }
+    static String weekStart(String date){Calendar c=parse(date);c.add(Calendar.DAY_OF_MONTH,-((c.get(Calendar.DAY_OF_WEEK)+5)%7));return key(c);}
     static String[] grid(String month) {
         Calendar c = parse(month(month));
         int offset = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7;

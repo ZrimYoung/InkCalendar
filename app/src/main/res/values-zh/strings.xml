@@ -35,7 +35,6 @@
     <string name="date_invalid">请选择 1900—2100 年之间的有效日期。</string>
     <string name="keep_awake">保持屏幕唤醒</string>
     <string name="full_screen">全屏展示</string>
-    <string name="large_text">加大文字</string>
     <string name="screen_orientation">屏幕方向</string>
     <string name="orientation_auto">自动（跟随系统）</string>
     <string name="orientation_landscape">强制横屏</string>
@@ -86,10 +85,9 @@
     <string name="theme_components">组件微调</string>
     <string name="theme_reset">恢复预设组件</string>
     <string name="theme_custom">已微调</string>
-    <string name="theme_original">墨印经典</string>
     <string name="theme_minimal">极简留白</string>
     <string name="theme_editorial">报刊编辑</string>
-    <string name="theme_grid">方格手账</string>
+    <string name="theme_grid">手账便笺</string>
     <string name="theme_ticket">票据清单</string>
     <string name="theme_today">今日看板</string>
     <string name="theme_date">日期布局</string>
@@ -100,8 +98,8 @@
     <string name="theme_tracking">字符间距</string>
     <string name="theme_caps">英文标题</string>
     <string name="theme_split">并排日期</string>
-    <string name="theme_masthead">放大分栏</string>
-    <string name="theme_tiles">分格数字</string>
+    <string name="theme_masthead">报头日期</string>
+    <string name="theme_tiles">错位数字</string>
     <string name="theme_reverse">日期在右</string>
     <string name="theme_center">日期居中</string>
     <string name="theme_open">无网格 · 圆形</string>
@@ -109,7 +107,7 @@
     <string name="theme_plain">无网格 · 下划线</string>
     <string name="theme_timeline">时间在左</string>
     <string name="theme_stacked">上下排列</string>
-    <string name="theme_cards">描边条目</string>
+    <string name="theme_cards">虚线分隔</string>
     <string name="theme_ledger">时间在右</string>
     <string name="theme_bare">无边框</string>
     <string name="theme_outline">细线描边</string>
@@ -121,4 +119,23 @@
     <string name="theme_spaced">疏朗</string>
     <string name="theme_case_normal">正常大小写</string>
     <string name="theme_case_upper">全大写</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_display">屏幕</string>
+    <string name="settings_calendar">日历内容</string>
+    <string name="calendar_text_size">日历字号</string>
+    <string name="decrease_text">减小字号</string>
+    <string name="increase_text">增大字号</string>
+    <string name="calendar_view">默认视图</string>
+    <string name="month_view">月视图</string>
+    <string name="week_view">周视图</string>
+    <string name="landscape_layout">横屏布局</string>
+    <string name="layout_classic">主副排版</string>
+    <string name="layout_balanced">对半双栏</string>
+    <string name="previous_week">上一周</string>
+    <string name="next_week">下一周</string>
+    <string name="no_events">无事项</string>
+    <string name="lunar_short">农历</string>
+    <string name="terms_short">节气</string>
+    <string name="holidays_short">节假日</string>
+    <plurals name="event_count"><item quantity="other">%1$d 项</item></plurals>
 </resources>
