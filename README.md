@@ -2,7 +2,7 @@
 
 面向 Android 墨水屏和浏览器的离线日历，采用黑白高对比界面，支持简体中文和 English。Android 与 Web 同步维护功能和界面，数据各自保存在本地。
 
-当前分支版本：**0.5.0-theme.5 测试版**。最低支持 Android 4.4 / API 19，需要触控操作。
+当前版本：**0.5.0-theme.6 测试版**。最低支持 Android 4.4 / API 19，需要触控操作。
 
 ## 功能
 
@@ -66,7 +66,7 @@ Web 的方向设置控制页面排版，全屏和唤醒取决于浏览器支持�
 
 ## 验证与许可
 
-- [主题版验证记录](docs/validation-0.5.0-theme.5.md)与[设备验收清单](docs/device-checklist.md)
+- [当前版本验证记录](docs/validation-0.5.0-theme.6.md)与[设备验收清单](docs/device-checklist.md)
 - [字体来源与许可证](docs/fonts.md)
 - [离线历法数据与许可证](docs/calendar-data.md)
 

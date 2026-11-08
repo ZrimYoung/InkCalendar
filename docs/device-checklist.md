@@ -1,6 +1,6 @@
 # 墨水屏设备验收清单
 
-当前版本验证见 [0.5.0-theme.5 验证记录](validation-0.5.0-theme.5.md)，双端差异见[双端说明](platform-parity.md)。历史结果保留在 [0.5.0-theme.2 验收记录](validation-0.5.0-theme.2.md)和 [0.4.1 验收记录](validation-0.4.1.md)。以下保留完整验收范围，未在验证记录中列为通过的项目仍待执行。
+当前版本验证见 [0.5.0-theme.6 验证记录](validation-0.5.0-theme.6.md)，双端差异见[双端说明](platform-parity.md)。此前的功能验证见 [0.5.0-theme.5 验证记录](validation-0.5.0-theme.5.md)，历史结果保留在 [0.5.0-theme.2 验收记录](validation-0.5.0-theme.2.md)和 [0.4.1 验收记录](validation-0.4.1.md)。以下保留完整验收范围，未在验证记录中列为通过的项目仍待执行。
 
 ## 设备信息
 
