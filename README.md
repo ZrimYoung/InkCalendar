@@ -64,6 +64,10 @@ Web 的方向设置控制页面排版，全屏和唤醒取决于浏览器支持�
 
 首次构建及测试需要下载开发依赖；测试范围和平台差异见验收记录。
 
+## 自动检查
+
+GitHub Actions 配置见 [CI 与签名说明](docs/github-actions.md)：自动运行测试、lint 和调试 APK 打包，上传报告与 APK Artifact。临时 CI 签名不保证覆盖现有安装；沿用签名需配置原 keystore Secret。
+
 ## 验证与许可
 
 - [当前版本验证记录](docs/validation-0.5.0-theme.6.md)与[设备验收清单](docs/device-checklist.md)
