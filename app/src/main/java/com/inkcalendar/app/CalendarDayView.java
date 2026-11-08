@@ -3,7 +3,6 @@ package com.inkcalendar.app;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -20,10 +19,11 @@ final class CalendarDayView extends LinearLayout {
     private final GradientDrawable dot=new GradientDrawable();
     private final String style;
     private final boolean today;
+    private final InkColors colors;
     private final int dotSize;
     CalendarDayView(Context context,String style,String day,String annotation,boolean marked,boolean today,
                     boolean chosen,boolean compact,float scale,Typeface latin,Typeface bold,Typeface chinese){
-        super(context);this.style=style;this.today=today;setOrientation(VERTICAL);setGravity(Gravity.CENTER);setWillNotDraw(false);
+        super(context);this.colors=InkColors.from(context);this.style=style;this.today=today;setOrientation(VERTICAL);setGravity(Gravity.CENTER);setWillNotDraw(false);
         dotSize=dp(4);float system=Math.max(1f,getResources().getConfiguration().fontScale);
         number=new StableTextView(context);number.setGravity(Gravity.CENTER);number.setTextSize(22*scale);
         number.setTypeface(today?bold:latin);number.useChinese(chinese,today);number.setText(day);
@@ -36,15 +36,15 @@ final class CalendarDayView extends LinearLayout {
     }
     private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private boolean filled(){return "ruled".equals(style)&&(isSelected()||isPressed());}
-    private void updateColors(){if(number==null||detail==null||marker==null)return;number.setTextColor((filled()||"open".equals(style)&&(isSelected()||isPressed()))?Color.WHITE:Color.BLACK);detail.setTextColor(filled()?Color.WHITE:Color.BLACK);dot.setColor(filled()?Color.WHITE:Color.BLACK);}
+    private void updateColors(){if(colors==null||number==null||detail==null||marker==null)return;number.setTextColor((filled()||"open".equals(style)&&(isSelected()||isPressed()))?colors.paper:colors.ink);detail.setTextColor(filled()?colors.paper:colors.ink);dot.setColor(filled()?colors.paper:colors.ink);}
     @Override protected void drawableStateChanged(){super.drawableStateChanged();updateColors();invalidate();}
     @Override protected void onDraw(Canvas canvas){
-        super.onDraw(canvas);ink.setColor(Color.WHITE);ink.setStyle(Paint.Style.FILL);canvas.drawRect(0,0,getWidth(),getHeight(),ink);ink.setColor(Color.BLACK);
+        super.onDraw(canvas);ink.setColor(colors.paper);ink.setStyle(Paint.Style.FILL);canvas.drawRect(0,0,getWidth(),getHeight(),ink);ink.setColor(colors.ink);
         boolean active=isSelected()||isPressed();
         if(filled())canvas.drawRect(0,0,getWidth(),getHeight(),ink);
         else if(active&&"open".equals(style))canvas.drawCircle(getWidth()/2f,number.getTop()+number.getHeight()/2f,Math.min(getWidth()-dp(4),number.getHeight())/2f,ink);
         else if(active&&"plain".equals(style)){float width=Math.min(getWidth()-dp(8),dp(32));canvas.drawRect((getWidth()-width)/2,number.getBottom()-dp(2),(getWidth()+width)/2,number.getBottom(),ink);}
         if(today&&!active&&"ruled".equals(style)){ink.setStyle(Paint.Style.STROKE);ink.setStrokeWidth(dp(2));canvas.drawRect(dp(1),dp(1),getWidth()-dp(1),getHeight()-dp(1),ink);}
-        if(isFocused()){ink.setStyle(Paint.Style.STROKE);ink.setStrokeWidth(dp(2));ink.setColor(filled()?Color.WHITE:Color.BLACK);canvas.drawRect(dp(2),dp(2),getWidth()-dp(2),getHeight()-dp(2),ink);}
+        if(isFocused()){ink.setStyle(Paint.Style.STROKE);ink.setStrokeWidth(dp(2));ink.setColor(filled()?colors.paper:colors.ink);canvas.drawRect(dp(2),dp(2),getWidth()-dp(2),getHeight()-dp(2),ink);}
     }
 }

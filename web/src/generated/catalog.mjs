@@ -35,11 +35,26 @@ export default {
     "holidays": true,
     "hideDone": false,
     "desk": false,
-    "language": "zh"
+    "language": "zh",
+    "colorMode": "day"
   },
   "webDefaults": {
     "full": false
   },
+  "colorModes": [
+    {
+      "id": "day",
+      "resource": "color_day",
+      "paper": "#ffffff",
+      "ink": "#000000"
+    },
+    {
+      "id": "night",
+      "resource": "color_night",
+      "paper": "#000000",
+      "ink": "#ffffff"
+    }
+  ],
   "components": [
     {
       "key": "date",
@@ -351,6 +366,8 @@ export default {
     "landscape-layout",
     "orientation",
     "language",
+    "color-mode",
+    "instant-settings",
     "fullscreen",
     "keep-awake"
   ]

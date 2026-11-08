@@ -50,10 +50,15 @@ def run(browser, base_url, production_url, screenshots):
     def settings(page):
         page.locator("[data-action=open-settings]").click()
 
-    def save_settings(page):
+    def choose(page, selector):
         before = revision(page)
-        page.locator("[data-action=save]").click()
+        page.locator(selector).click()
         commit(page, before)
+        expect(page.locator(selector)).to_be_focused()
+
+    def close_settings(page):
+        expect(page.locator("[data-action=save]")).to_have_count(0)
+        page.locator("[data-action=close-settings]").click()
 
     def add_event(page, title, on_date=None, time=""):
         page.locator("[data-action=add-event]").click()
@@ -126,10 +131,12 @@ def run(browser, base_url, production_url, screenshots):
     passed("unsaved form survives reload and orientation changes; cancellation keeps saved data")
 
     settings(page)
-    page.locator("[data-scale-step='5']").click()
+    choose(page, "[data-scale-step='5']")
+    assert record(page)["data"]["applied"]["scale"] == 105
     page.locator("[data-action=appearance]").click()
-    page.locator("[data-style=minimal]").click()
-    page.locator("[data-font=atkinson]").click()
+    choose(page, "[data-style=minimal]")
+    choose(page, "[data-font=atkinson]")
+    assert record(page)["data"]["applied"]["theme"]["font"] == "atkinson"
     page.locator("[data-action=components]").click()
     expect(page.locator("[data-component-mini]")).to_have_count(22)
     page.evaluate("document.fonts.ready")
@@ -138,32 +145,120 @@ def run(browser, base_url, production_url, screenshots):
         assert len(images) == count and len(set(images)) == count, key
     if screenshots:
         page.screenshot(path=str(screenshots / "components-1280.png"), full_page=True)
-    page.locator("[data-segment=date][data-value=center]").click()
-    page.locator("[data-action=save]").click()
-    page.locator("[data-action=save]").click()
-    page.locator("[data-action=cancel]").click()
-    assert record(page)["data"]["applied"]["theme"]["style"] == "editorial"
-    assert record(page)["data"]["applied"]["scale"] == 100
-    passed("nested appearance/component saves remain a draft until outer save")
+    choose(page, "[data-segment=date][data-value=center]")
+    assert record(page)["data"]["applied"]["theme"]["overrides"]["date"] == "center"
+    close_settings(page)
+    close_settings(page)
+    close_settings(page)
+    assert record(page)["data"]["applied"]["theme"]["style"] == "minimal"
+    assert record(page)["data"]["applied"]["scale"] == 105
+    passed("settings, font, style and components apply immediately; closing keeps all choices")
     passed("all 22 component options have distinct focused previews")
 
+    page.emulate_media(color_scheme="dark")
+    assert page.locator("#ink-calendar").get_attribute("data-color-mode") == "day"
+    retained = record(page)["data"]
     settings(page)
-    page.locator("[data-scale-step='5']").click()
-    page.locator("[data-scale-step='5']").click()
-    page.locator("[data-segment=view][data-value=week]").click()
-    page.locator("[data-segment=layout][data-value=balanced]").click()
+    choose(page, "[data-segment=colorMode][data-value=night]")
+    assert page.locator("[data-segment=colorMode] svg").count() == 2
+    expect(page.locator("#ink-calendar")).to_have_attribute("data-color-mode", "night")
+    assert record(page)["data"]["applied"]["colorMode"] == "night"
+    page.reload()
+    expect(page.locator("[data-segment=colorMode][data-value=night]")).to_have_attribute("aria-pressed", "true")
+    close_settings(page)
+    assert record(page)["data"]["events"] == retained["events"]
+    assert record(page)["data"]["milestones"] == retained["milestones"]
+    for selector in [".mock", "html"]:
+        assert page.locator(selector).evaluate("e=>getComputedStyle(e).backgroundColor") == "rgb(0, 0, 0)"
+    assert page.locator(".mock").evaluate("e=>getComputedStyle(e).color") == "rgb(255, 255, 255)"
+    passed("day default ignores system dark mode; night applies instantly and survives reload")
+
+    page.locator("[data-action=add-event]").click()
+    field = page.locator("#week-task-form [name=title]")
+    assert field.evaluate("e=>getComputedStyle(e).backgroundColor") == "rgb(0, 0, 0)"
+    assert field.evaluate("e=>getComputedStyle(e).color") == "rgb(255, 255, 255)"
+    page.locator("[data-action=cancel-edit]").click()
+    passed("night mode covers the whole page and editor and preserves calendar data")
+
+    settings(page)
+    assert page.locator("[data-setting=awake]").evaluate("e=>getComputedStyle(e).borderColor") == "rgb(255, 255, 255)"
     page.locator("[data-action=appearance]").click()
-    page.locator("[data-font=space]").click()
-    page.locator("[data-style=grid]").click()
+    page.evaluate("document.fonts.ready")
+    assert page.locator("[data-mini]").evaluate_all("els=>els.every(e=>e.getContext('2d').getImageData(0,0,1,1).data.slice(0,3).every(v=>v===0))")
+    if screenshots:
+        page.screenshot(path=str(screenshots / "night-appearance-1280.png"), full_page=True)
+    page.locator("[data-action=components]").click()
+    assert page.locator("[data-component-mini]").evaluate_all("els=>els.every(e=>e.getContext('2d').getImageData(0,0,1,1).data.slice(0,3).every(v=>v===0))")
+    close_settings(page)
+    close_settings(page)
+    choose(page, "[data-segment=colorMode][data-value=day]")
+    expect(page.locator("#ink-calendar")).to_have_attribute("data-color-mode", "day")
+    close_settings(page)
+    page.emulate_media(color_scheme="light")
+    passed("night settings, style/component thumbnails, and instant return to day work together")
+
+    settings(page)
+    page.locator("[data-action=appearance]").click()
+    before = record(page)
+    page.evaluate("""()=>{window.__settingsPut=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){throw new DOMException('Settings quota failure','QuotaExceededError');};}""")
+    page.locator("[data-style=ticket]").click()
+    expect(page.locator("[data-action=retry-settings]")).to_be_visible()
+    expect(page.locator("[data-style=ticket]")).to_have_attribute("aria-pressed", "true")
+    assert record(page) == before
+    close_settings(page)
+    close_settings(page)
+    page.evaluate("()=>{IDBObjectStore.prototype.put=window.__settingsPut;}")
+    page.locator("[data-action=future]").click()
+    before_revision = revision(page)
+    page.locator("[data-future-days='30']").click()
+    deadline = time.monotonic() + 8
+    while revision(page) <= before_revision and time.monotonic() < deadline:
+        page.wait_for_timeout(25)
+    assert revision(page) > before_revision
+    page.locator("[data-action=close-future]").click()
+    before_revision = revision(page)
+    page.locator("[data-action=retry-settings]").click()
+    commit(page, before_revision)
+    assert record(page)["data"]["applied"]["theme"]["style"] == "ticket"
+    assert record(page)["data"]["applied"]["futureDays"] == 30
+    assert record(page)["data"]["events"] == before["data"]["events"]
+    page.locator("[data-action=future]").click()
+    before_revision = revision(page)
+    page.locator("[data-future-days='7']").click()
+    commit(page, before_revision)
+    page.locator("[data-action=close-future]").click()
+    passed("failed auto-save keeps choices and retries after closing without reverting newer preferences")
+
+    settings(page)
+    page.evaluate("window.__rangeBefore=document.querySelector('[data-scale]')")
+    page.locator("[data-scale]").evaluate("e=>{e.value='120';e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    assert page.evaluate("window.__rangeBefore===document.querySelector('[data-scale]')")
+    expect(page.locator("#scale-output")).to_have_text("120%")
+    before_revision = revision(page)
+    page.locator("[data-scale]").dispatch_event("change")
+    commit(page, before_revision)
+    assert record(page)["data"]["applied"]["scale"] == 120
+    before_revision = revision(page)
+    page.locator("[data-scale]").evaluate("e=>{e.value='100';e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}")
+    commit(page, before_revision)
+    passed("range dragging keeps its control stable and saves automatically on release")
+
+    choose(page, "[data-scale-step='5']")
+    choose(page, "[data-scale-step='5']")
+    choose(page, "[data-segment=view][data-value=week]")
+    choose(page, "[data-segment=layout][data-value=balanced]")
+    page.locator("[data-action=appearance]").click()
+    choose(page, "[data-font=space]")
+    choose(page, "[data-style=grid]")
     expect(page.locator("[data-font=space]")).to_have_attribute("aria-pressed", "true")
-    page.locator("[data-action=save]").click()
-    save_settings(page)
+    close_settings(page)
+    close_settings(page)
     applied = record(page)["data"]["applied"]
     assert applied["theme"]["font"] == "space" and applied["theme"]["style"] == "grid"
     assert applied["scale"] == 110 and applied["layout"] == "balanced"
     assert page.locator(".day-row").count() == 7
     assert page.locator(".home-identity").get_attribute("data-today") == today
-    passed("week, balanced layout, independent font/style and plus/minus settings save")
+    passed("week, balanced layout, independent font/style and plus/minus settings apply automatically")
 
     page.locator("[data-action=milestones]").click()
     for i in range(3):
@@ -267,6 +362,19 @@ def run(browser, base_url, production_url, screenshots):
     other.close()
     passed("idle window refreshes after another window saves")
 
+    other = open_page(ctx)
+    settings(other)
+    settings(page)
+    choose(page, "[data-segment=colorMode][data-value=night]")
+    expect(other.locator("#ink-calendar")).to_have_attribute("data-color-mode", "night")
+    expect(other.locator("[data-action=close-settings]")).to_be_visible()
+    choose(other, "[data-segment=colorMode][data-value=day]")
+    expect(page.locator("#ink-calendar")).to_have_attribute("data-color-mode", "day")
+    close_settings(other)
+    close_settings(page)
+    other.close()
+    passed("idle settings pages follow another window's auto-saved choices without closing")
+
     snapshot = record(page)["data"]
     snapshot["applied"]["hideDone"] = False
     snapshot["applied"]["scale"] = 100
@@ -311,8 +419,8 @@ def run(browser, base_url, production_url, screenshots):
             assert abs(box["w"] / box["h"] - expected_ratio) < 0.02
         if screenshots:
             page.screenshot(path=str(screenshots / f"appearance-{width}.png"), full_page=True)
-        page.locator("[data-action=cancel]").click()
-        page.locator("[data-action=cancel]").click()
+        close_settings(page)
+        close_settings(page)
     passed("bounded theme/font grids and orientation-aware thumbnails at narrow, short and wide sizes")
 
     # Ordinary landscape sizes fit the full six-week month without moving today.
@@ -357,14 +465,14 @@ def run(browser, base_url, production_url, screenshots):
     passed("calendar swipe retains the current-day hero")
 
     settings(page)
-    page.locator("[data-segment=language][data-value=en]").click()
-    save_settings(page)
+    choose(page, "[data-segment=language][data-value=en]")
+    close_settings(page)
     settings(page)
     assert "Calendar text size" in page.locator("#ink-calendar-app").inner_text()
     assert "Page orientation" in page.locator("#ink-calendar-app").inner_text()
     assert "Primary / secondary" in page.locator("#ink-calendar-app").inner_text()
     assert "Landscape only." not in page.locator("#ink-calendar-app").inner_text()
-    page.locator("[data-action=cancel]").click()
+    close_settings(page)
     passed("English UI uses shared native wording and Web-specific orientation wording")
     ctx.close()
 
@@ -403,9 +511,9 @@ def run(browser, base_url, production_url, screenshots):
         expect(page.locator(".task-title", has_text="离线保留事项")).to_be_visible()
         settings(page)
         page.locator("[data-action=appearance]").click()
-        page.locator("[data-font=fraunces]").click()
-        page.locator("[data-action=save]").click()
-        save_settings(page)
+        choose(page, "[data-font=fraunces]")
+        close_settings(page)
+        close_settings(page)
         page.evaluate("document.fonts.ready")
         assert page.evaluate("document.fonts.check('16px InkFraunces')")
         page.reload()

@@ -42,18 +42,18 @@ public class MainActivityTest {
     private void click(View root,String label){View view=label(root,label);while(!view.isClickable() && view.getParent() instanceof View)view=(View)view.getParent();assertTrue("Not clickable: "+label,view.isClickable());view.performClick();}
     private <T> T field(String name)throws Exception{Field f=MainActivity.class.getDeclaredField(name);f.setAccessible(true);return (T)f.get(activity);}
     private EventStore store()throws Exception{return field("store");}
-    @Test @Config(sdk={19,28}) public void orientationPersistsAndCancelKeepsTheSavedChoice() {
+    @Test @Config(sdk={19,28}) public void orientationAppliesImmediatelyAndClosingKeepsIt() {
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,activity.getRequestedOrientation());
-        description(main(),"Settings").performClick();click(dialog(),"Force landscape");click(dialog(),"Save");
+        description(main(),"Settings").performClick();click(dialog(),"Force landscape");click(dialog(),"Close");
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
         controller.recreate();activity=controller.get();
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
-        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Cancel");
-        assertEquals(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,activity.getRequestedOrientation());
-        assertEquals("landscape",activity.getSharedPreferences("display",0).getString("orientation",""));
-        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Save");
+        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Close");
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
-        description(main(),"Settings").performClick();click(dialog(),"Auto (follow system)");click(dialog(),"Save");
+        assertEquals("portrait",activity.getSharedPreferences("display",0).getString("orientation",""));
+        description(main(),"Settings").performClick();click(dialog(),"Force portrait");click(dialog(),"Close");
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
+        description(main(),"Settings").performClick();click(dialog(),"Auto (follow system)");click(dialog(),"Close");
         assertEquals(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED,activity.getRequestedOrientation());
         assertEquals("auto",activity.getSharedPreferences("display",0).getString("orientation",""));
     }
@@ -63,27 +63,27 @@ public class MainActivityTest {
         input.setText("2026-02-17");click(dialog(),"Save");assertEquals("2026-02-17",field("selected"));assertEquals("2026-02-01",field("displayedMonth"));
     }
     @Test public void holidaySwitchAndChineseOnlyAnnotations()throws Exception {
-        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"Save");
+        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"关闭");
         description(main(),"跳转日期").performClick();((EditText)description(dialog(),"日期 · 年-月-日")).setText("2026-11-07");click(dialog(),"保存");
         label(main(),"立冬");
-        description(main(),"设置").performClick();((CheckBox)label(dialog(),"节假日与调休")).performClick();click(dialog(),"English");click(dialog(),"保存");
+        description(main(),"设置").performClick();((CheckBox)label(dialog(),"节假日与调休")).performClick();click(dialog(),"English");click(dialog(),"Close");
         for(View view:all(main()))if(view instanceof TextView)assertFalse(((TextView)view).getText().toString().contains("立冬"));
         assertFalse(activity.getSharedPreferences("display",0).getBoolean("holidays",true));
     }
     @Test public void lunarTermsAndHolidaysHaveIndependentPersistentSwitches()throws Exception {
-        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"Save");
+        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"关闭");
         description(main(),"跳转日期").performClick();((EditText)description(dialog(),"日期 · 年-月-日")).setText("2026-11-07");click(dialog(),"保存");
         assertEquals("立冬",((TextView)main().findViewWithTag("almanac:2026-11-07")).getText().toString());
-        description(main(),"设置").performClick();click(dialog(),"节气（仅中文）");click(dialog(),"保存");
+        description(main(),"设置").performClick();click(dialog(),"节气（仅中文）");click(dialog(),"关闭");
         assertEquals("廿九",((TextView)main().findViewWithTag("almanac:2026-11-07")).getText().toString());
-        description(main(),"设置").performClick();click(dialog(),"农历（仅中文）");click(dialog(),"节气（仅中文）");click(dialog(),"节假日与调休");click(dialog(),"保存");
+        description(main(),"设置").performClick();click(dialog(),"农历（仅中文）");click(dialog(),"节气（仅中文）");click(dialog(),"节假日与调休");click(dialog(),"关闭");
         assertEquals("立冬",((TextView)main().findViewWithTag("almanac:2026-11-07")).getText().toString());
         assertEquals("",((TextView)main().findViewWithTag("almanac:2026-11-06")).getText().toString());
-        description(main(),"设置").performClick();click(dialog(),"English");click(dialog(),"保存");
+        description(main(),"设置").performClick();click(dialog(),"English");click(dialog(),"Close");
         assertEquals("",((TextView)main().findViewWithTag("almanac:2026-11-07")).getText().toString());
         assertFalse(activity.getSharedPreferences("display",0).getBoolean("lunar",true));assertTrue(activity.getSharedPreferences("display",0).getBoolean("terms",false));assertFalse(activity.getSharedPreferences("display",0).getBoolean("holidays",true));
         controller.recreate();activity=controller.get();
-        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"Save");
+        description(main(),"Settings").performClick();click(dialog(),"简体中文");click(dialog(),"关闭");
         assertEquals("立冬",((TextView)main().findViewWithTag("almanac:2026-11-07")).getText().toString());
     }
     @Test public void completeEditAndFutureRange()throws Exception {
@@ -98,7 +98,7 @@ public class MainActivityTest {
         description(main(),"Milestones").performClick();description(dialog(),"Add milestone").performClick();
         ((EditText)description(dialog(),"Name")).setText("Birthday");click(dialog(),"Save");assertEquals(1,store().milestones().size());
         click(dialog(),"Birthday");((EditText)description(dialog(),"Name")).setText("Renamed");click(dialog(),"Save");assertEquals("Renamed",store().milestones().get(0).title);
-        click(dialog(),"Close");description(main(),"Settings").performClick();click(dialog(),"Desk display mode");click(dialog(),"Save");
+        click(dialog(),"Close");description(main(),"Settings").performClick();click(dialog(),"Desk display mode");click(dialog(),"Close");
         assertEquals(View.GONE,((View)field("monthGrid")).getParent() instanceof View?((View)((View)field("monthGrid")).getParent()).getVisibility():-1);
         label(main(),"Renamed");description(main(),"Milestones").performClick();click(dialog(),"Renamed");description(dialog(),"Delete").performClick();click(dialog(),"Cancel");
         description(dialog(),"Delete").performClick();click(dialog(),"Delete");assertTrue(store().milestones().isEmpty());

@@ -96,8 +96,24 @@ public class PlatformParityTest {
         JSONObject d=contract.getJSONObject("defaults");DisplayOptions options=new DisplayOptions();
         assertEquals(d.getInt("scale"),options.scale);assertEquals(d.getString("view"),options.view);assertEquals(d.getString("layout"),options.layout);
         assertEquals(d.getString("orientation"),options.orientation);assertEquals(d.getString("language"),options.language);
+        assertEquals(d.getString("colorMode"),options.colorMode);
         assertEquals(d.getBoolean("full"),options.full);assertEquals(d.getBoolean("awake"),options.awake);
         assertEquals(contract.getJSONObject("limits").getInt("scaleMin"),DisplayOptions.clamp(Integer.MIN_VALUE));
         assertEquals(contract.getJSONObject("limits").getInt("scaleMax"),DisplayOptions.clamp(Integer.MAX_VALUE));
+    }
+    @Test public void colorModeMigrationAndPalettesMatchSharedCases() throws Exception {
+        android.content.SharedPreferences prefs=org.robolectric.RuntimeEnvironment.getApplication().getSharedPreferences("color-mode-parity",0);
+        JSONArray cases=fixtures.getJSONArray("colorModes");
+        for(int i=0;i<cases.length();i++){
+            JSONObject c=cases.getJSONObject(i);prefs.edit().clear().commit();
+            if(!c.isNull("value"))prefs.edit().putString("color_mode",c.getString("value")).commit();
+            assertEquals(c.getString("expected"),DisplayOptions.read(prefs).colorMode);
+        }
+        JSONArray palettes=contract.getJSONArray("colorModes");
+        for(int i=0;i<palettes.length();i++){
+            JSONObject p=palettes.getJSONObject(i);InkColors colors=InkColors.forMode(p.getString("id"));
+            assertEquals(android.graphics.Color.parseColor(p.getString("paper")),colors.paper);
+            assertEquals(android.graphics.Color.parseColor(p.getString("ink")),colors.ink);
+        }
     }
 }

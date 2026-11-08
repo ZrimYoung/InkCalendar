@@ -33,6 +33,10 @@ const java = `// Generated from shared/calendar-contract.json (${digest}). Do no
 `    private SharedThemeCatalog() {}\n`+
 `    static final String DEFAULT_STYLE=${quoted(contract.defaults.theme.style)};\n`+
 `    static final String DEFAULT_FONT=${quoted(contract.defaults.theme.font)};\n`+
+`    static final String[] COLOR_MODES=${array(contract.colorModes.map(m => m.id))};\n`+
+`    static final int[] COLOR_MODE_LABELS={${contract.colorModes.map(m => 'R.string.'+m.resource).join(',')}};\n`+
+`    static final String[] COLOR_MODE_PAPER=${array(contract.colorModes.map(m => m.paper))};\n`+
+`    static final String[] COLOR_MODE_INK=${array(contract.colorModes.map(m => m.ink))};\n`+
 `    static final String[] FONTS=${array(contract.fonts.map(f => f.id))};\n`+
 `    static final String[] FONT_NAMES=${array(contract.fonts.map(f => f.name))};\n`+
 `    static final String[] FONT_REGULAR=${array(contract.fonts.map(f => f.regular))};\n`+

@@ -121,6 +121,9 @@
     <string name="theme_case_normal">Mixed case</string>
     <string name="theme_case_upper">Uppercase</string>
     <string name="settings_appearance">Appearance</string>
+    <string name="color_mode">Color mode</string>
+    <string name="color_day">Day</string>
+    <string name="color_night">Night</string>
     <string name="settings_display">Display</string>
     <string name="settings_calendar">Calendar content</string>
     <string name="calendar_text_size">Calendar text size</string>

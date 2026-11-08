@@ -10,5 +10,7 @@ delivery/
 .idea/
 *.iml
 node_modules/
+__pycache__/
+*.pyc
 web/dist/
 web/.cache/

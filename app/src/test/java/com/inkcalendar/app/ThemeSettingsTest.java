@@ -37,21 +37,24 @@ public class ThemeSettingsTest {
     private Object field(String name)throws Exception{Field field=MainActivity.class.getDeclaredField(name);field.setAccessible(true);return field.get(activity);}
     private void settings(){desc(main(),"Settings").performClick();}
     private void appearance(){desc(dialog(),"Appearance and themes").performClick();}
-    private void save(){desc(dialog(),"Save").performClick();}
+    private void closePage(){desc(dialog(),"Close").performClick();}
     @Test public void themeAndFontAreIndependentAndPersistWithLatestFeatures()throws Exception{
         settings();appearance();assertEquals(5,all(dialog()).stream().filter(v->v instanceof ThemePreview).count());
         assertEquals(7,all(dialog()).stream().filter(v->v instanceof RadioButton&&v.getTag() instanceof String).count());
-        desc(dialog(),"Geist").performClick();desc(dialog(),"Ticket").performClick();save();save();
+        desc(dialog(),"Geist").performClick();desc(dialog(),"Ticket").performClick();closePage();closePage();
         assertEquals("geist",prefs.getString("theme_font",""));assertEquals("ticket",prefs.getString("theme_style",""));
         ThemeConfig config=(ThemeConfig)field("theme");assertTrue(config.sans());assertTrue(config.is("calendar","plain"));
         desc(main(),"Future events").performClick();text(dialog(),"30 days").performClick();text(dialog(),"Back").performClick();
         desc(main(),"Milestones").performClick();text(dialog(),"Close").performClick();controller.recreate();activity=controller.get();
         assertEquals("geist",((ThemeConfig)field("theme")).font);assertEquals(30,prefs.getInt("future_days",7));
     }
-    @Test public void nestedCancelAndOuterCancelDoNotApplyDrafts(){
-        settings();appearance();desc(dialog(),"Quiet Space").performClick();desc(dialog(),"Geist").performClick();desc(dialog(),"Cancel").performClick();save();
-        assertEquals("editorial",ThemeConfig.read(prefs).style);assertEquals("original",ThemeConfig.read(prefs).font);
-        settings();appearance();desc(dialog(),"Ticket").performClick();save();desc(dialog(),"Cancel").performClick();assertEquals("editorial",ThemeConfig.read(prefs).style);
+    @Test public void selectionsApplyImmediatelyAndClosingKeepsThem(){
+        settings();appearance();desc(dialog(),"Quiet Space").performClick();desc(dialog(),"Geist").performClick();
+        assertEquals("minimal",ThemeConfig.read(prefs).style);assertEquals("geist",ThemeConfig.read(prefs).font);
+        assertTrue(all(dialog()).stream().noneMatch(v->"Save".contentEquals(v.getContentDescription()==null?"":v.getContentDescription())));
+        closePage();closePage();assertEquals("minimal",ThemeConfig.read(prefs).style);
+        settings();appearance();desc(dialog(),"Ticket").performClick();
+        assertEquals("ticket",ThemeConfig.read(prefs).style);closePage();closePage();assertEquals("ticket",ThemeConfig.read(prefs).style);
     }
     @Test public void fontCardsShowActualAaAboveNameAndKeepExactlyOneSelection()throws Exception{
         prefs.edit().putBoolean("large",true).commit();controller.recreate();activity=controller.get();
@@ -70,12 +73,12 @@ public class ThemeSettingsTest {
             assertTrue(id,name.getBottom()<=card.getHeight()-card.getPaddingBottom());
             assertNotNull(name.getLayout());
             for(int line=0;line<name.getLineCount();line++)assertTrue(id,name.getLayout().getLineMax(line)<=name.getWidth()-name.getCompoundPaddingLeft()-name.getCompoundPaddingRight()+1);
-            card.performClick();assertEquals(id,((ThemeConfig)field("appearanceThemeDraft")).font);
+            card.performClick();root=dialog();measure(root,320);assertEquals(id,((ThemeConfig)field("theme")).font);
             for(String other:ThemeConfig.FONTS){
                 assertEquals(other,id.equals(other),root.findViewWithTag("font:"+other).isSelected());
                 assertEquals(other,id.equals(other),((RadioButton)root.findViewWithTag(other)).isChecked());
             }
-            assertEquals("original",ThemeConfig.read(prefs).font);
+            assertEquals(id,ThemeConfig.read(prefs).font);
         }
     }
     @Test public void thumbnailHeightFollowsWidthWithoutDistortingTheAspectRatio(){
@@ -107,14 +110,14 @@ public class ThemeSettingsTest {
             }
         }
     }
-    @Test public void choicesReflowAcrossWidthsAndKeepNestedDrafts()throws Exception{
+    @Test public void choicesReflowAcrossWidthsAndKeepAppliedSelections()throws Exception{
         prefs.edit().putBoolean("large",true).commit();controller.recreate();activity=controller.get();
         settings();appearance();desc(dialog(),"Geist").performClick();int narrowColumns=0;
         try{
             for(int width:new int[]{320,572,773,1400}){
                 RuntimeEnvironment.setQualifiers("w"+width+"dp-h"+(width>=640?572:773)+"dp-"+(width>=640?"land":"port")+"-mdpi");
                 controller.recreate();activity=controller.get();View root=dialog();measure(root,width);boundedChoices(root);
-                assertEquals("geist",((ThemeConfig)field("appearanceThemeDraft")).font);
+                assertEquals("geist",((ThemeConfig)field("theme")).font);
                 assertTrue(((RadioButton)root.findViewWithTag("geist")).isChecked());
                 ViewGroup fonts=root.findViewWithTag("choices:fonts");java.util.Set<Integer> positions=new java.util.HashSet<>();
                 for(int i=0;i<fonts.getChildCount();i++)positions.add(fonts.getChildAt(i).getLeft());
@@ -126,8 +129,8 @@ public class ThemeSettingsTest {
             assertEquals(7,all(dialog()).stream().filter(v->v instanceof ChoiceGrid).count());
             desc(dialog(),"Date on right").performClick();
             RuntimeEnvironment.setQualifiers("w320dp-h773dp-port-mdpi");controller.recreate();activity=controller.get();measure(dialog(),320);boundedChoices(dialog());
-            assertEquals("geist",((ThemeConfig)field("componentThemeDraft")).font);assertTrue(((ThemeConfig)field("componentThemeDraft")).is("date","reverse"));
-            save();save();assertEquals("original",ThemeConfig.read(prefs).font);save();assertEquals("geist",ThemeConfig.read(prefs).font);assertTrue(ThemeConfig.read(prefs).is("date","reverse"));
+            assertEquals("geist",((ThemeConfig)field("theme")).font);assertTrue(((ThemeConfig)field("theme")).is("date","reverse"));
+            assertEquals("geist",ThemeConfig.read(prefs).font);closePage();closePage();closePage();assertEquals("geist",ThemeConfig.read(prefs).font);assertTrue(ThemeConfig.read(prefs).is("date","reverse"));
         }finally{RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");}
     }
     @Test public void pagePreviewChangesFrameWhenRotatedWhileLocalComponentsKeepTheirShape(){
@@ -141,10 +144,10 @@ public class ThemeSettingsTest {
             }
         }finally{RuntimeEnvironment.setQualifiers("w320dp-h640dp-port-mdpi");}
     }
-    @Test public void componentDraftAndFontSurviveRecreationAndSave()throws Exception{
+    @Test public void componentAndFontApplyImmediatelyAndSurviveRecreation()throws Exception{
         settings();appearance();desc(dialog(),"Geist").performClick();text(dialog(),"Customize components").performClick();desc(dialog(),"Date on right").performClick();
-        controller.recreate();activity=controller.get();assertTrue(((ThemeConfig)field("componentThemeDraft")).is("date","reverse"));
-        save();save();save();ThemeConfig saved=ThemeConfig.read(prefs);assertEquals("geist",saved.font);assertTrue(saved.is("date","reverse"));
+        controller.recreate();activity=controller.get();assertTrue(((ThemeConfig)field("theme")).is("date","reverse"));
+        closePage();closePage();closePage();ThemeConfig saved=ThemeConfig.read(prefs);assertEquals("geist",saved.font);assertTrue(saved.is("date","reverse"));
         assertEquals("editorial",saved.style);assertFalse(saved.overrides.isEmpty());
     }
     @Test public void eventDotHasItsOwnSlotInEveryPreset()throws Exception{
@@ -169,13 +172,13 @@ public class ThemeSettingsTest {
         android.graphics.Paint paint=new android.graphics.Paint();paint.setTextSize(24);TextTracking.Word wide=spaced.getSpans(0,spaced.length(),TextTracking.Word.class)[0],narrow=tight.getSpans(0,tight.length(),TextTracking.Word.class)[0];
         assertTrue(wide.getSize(paint,heading,0,3,null)>narrow.getSize(paint,heading,0,3,null));
     }
-    @Test public void orientationAndThemeDraftSurviveTogether()throws Exception{
+    @Test public void orientationAndAppliedThemeSurviveTogether()throws Exception{
         settings();text(dialog(),"Force portrait").performClick();appearance();desc(dialog(),"Geist").performClick();
-        controller.recreate();activity=controller.get();save();save();
+        controller.recreate();activity=controller.get();closePage();closePage();
         assertEquals("geist",ThemeConfig.read(prefs).font);assertEquals("portrait",prefs.getString("orientation",""));
         assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,activity.getRequestedOrientation());
-        settings();text(dialog(),"Force landscape").performClick();desc(dialog(),"Cancel").performClick();
-        assertEquals("portrait",prefs.getString("orientation",""));assertEquals("geist",ThemeConfig.read(prefs).font);
+        settings();text(dialog(),"Force landscape").performClick();closePage();
+        assertEquals("landscape",prefs.getString("orientation",""));assertEquals("geist",ThemeConfig.read(prefs).font);
     }
     @Test public void legacyClassicSettingsAndDraftsMapToEditorialWithoutLosingCustomizations(){
         prefs.edit().putString("theme_style","original").putString("theme_font","geist").putString("theme_date","reverse").commit();

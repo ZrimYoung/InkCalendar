@@ -1,5 +1,11 @@
 {
   "schemaVersion": 1,
+  "colorModes": [
+    { "value": null, "expected": "day" },
+    { "value": "day", "expected": "day" },
+    { "value": "night", "expected": "night" },
+    { "value": "system", "expected": "day" }
+  ],
   "dates": [
     { "date": "2026-11-07", "weekStart": "2026-11-02", "gridFirst": "2026-10-26", "gridLast": "2026-12-06" },
     { "date": "2026-02-17", "weekStart": "2026-02-16", "gridFirst": "2026-01-26", "gridLast": "2026-03-08" },

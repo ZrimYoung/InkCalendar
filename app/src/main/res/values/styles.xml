@@ -1,17 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Holo.Light.NoActionBar">
+        <item name="inkColorMode">day</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:editTextStyle">@style/InkEditText</item>
         <item name="android:windowBackground">#FFFFFF</item>
         <item name="android:colorBackground">#FFFFFF</item>
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#000000</item>
+        <item name="android:textColorHint">#555555</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowAnimationStyle">@null</item>
         <item name="android:windowDisablePreview">true</item>
+    </style>
+    <style name="AppTheme.Night" parent="AppTheme">
+        <item name="inkColorMode">night</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:colorBackground">#000000</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#FFFFFF</item>
+        <item name="android:textColorHint">#BBBBBB</item>
+        <item name="android:editTextStyle">@style/InkEditText.Night</item>
     </style>
     <style name="InkEditText" parent="android:style/Widget.EditText">
         <item name="android:background">@drawable/ink_input</item>
         <item name="android:textCursorDrawable">@drawable/ink_cursor</item>
         <item name="android:textColorHighlight">#33000000</item>
+    </style>
+    <style name="InkEditText.Night" parent="InkEditText">
+        <item name="android:background">@drawable/ink_input_night</item>
+        <item name="android:textCursorDrawable">@drawable/ink_cursor_night</item>
+        <item name="android:textColorHighlight">#33FFFFFF</item>
     </style>
 </resources>

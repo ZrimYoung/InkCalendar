@@ -11,9 +11,13 @@
     "theme": { "style": "editorial", "font": "original", "overrides": {} },
     "scale": 100, "view": "month", "layout": "classic", "orientation": "auto", "futureDays": 7,
     "awake": true, "full": true, "lunar": true, "terms": true, "holidays": true,
-    "hideDone": false, "desk": false, "language": "zh"
+    "hideDone": false, "desk": false, "language": "zh", "colorMode": "day"
   },
   "webDefaults": { "full": false },
+  "colorModes": [
+    { "id": "day", "resource": "color_day", "paper": "#ffffff", "ink": "#000000" },
+    { "id": "night", "resource": "color_night", "paper": "#000000", "ink": "#ffffff" }
+  ],
   "components": [
     { "key": "date", "resource": "theme_date", "options": [
       { "id": "split", "resource": "theme_split", "icon": "columns-2" },
@@ -80,5 +84,5 @@
     { "id": "atkinson", "name": "Atkinson Hyperlegible Next", "family": "InkAtkinson", "sans": true,
       "regular": "InkAtkinson-Regular.ttf", "bold": "InkAtkinson-Bold.ttf", "boldWeight": 700 }
   ],
-  "features": ["month", "week", "date-jump", "period-swipe", "events", "completion", "hide-completed", "future-7-30", "milestones", "lunar-anniversaries", "pinned-limit", "desk", "themes", "fonts", "components", "text-scale", "landscape-layout", "orientation", "language", "fullscreen", "keep-awake"]
+  "features": ["month", "week", "date-jump", "period-swipe", "events", "completion", "hide-completed", "future-7-30", "milestones", "lunar-anniversaries", "pinned-limit", "desk", "themes", "fonts", "components", "text-scale", "landscape-layout", "orientation", "language", "color-mode", "instant-settings", "fullscreen", "keep-awake"]
 }

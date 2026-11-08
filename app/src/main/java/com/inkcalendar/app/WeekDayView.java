@@ -2,7 +2,6 @@ package com.inkcalendar.app;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -22,6 +21,6 @@ final class WeekDayView extends LinearLayout {
         addView(copy,new LayoutParams(0,-2,1));StableTextView total=text(context,count,12*scale,latin,chinese);total.setGravity(Gravity.END);addView(total,new LayoutParams(-2,-2));
         setFocusable(true);setClickable(true);
     }
-    private StableTextView text(Context c,String value,float size,Typeface latin,Typeface chinese){StableTextView t=new StableTextView(c);t.setText(value);t.setTextSize(size);t.setTypeface(latin);t.useChinese(chinese,false);t.setTextColor(Color.BLACK);t.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);return t;}
+    private StableTextView text(Context c,String value,float size,Typeface latin,Typeface chinese){StableTextView t=new StableTextView(c);t.setText(value);t.setTextSize(size);t.setTypeface(latin);t.useChinese(chinese,false);t.setTextColor(InkColors.from(c).ink);t.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);return t;}
     private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
 }

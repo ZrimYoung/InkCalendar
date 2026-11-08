@@ -1,10 +1,14 @@
-// Generated from shared/calendar-contract.json (2a0e45c78fa1). Do not edit.
+// Generated from shared/calendar-contract.json (225320c65a0f). Do not edit.
 package com.inkcalendar.app;
 
 final class SharedThemeCatalog {
     private SharedThemeCatalog() {}
     static final String DEFAULT_STYLE="editorial";
     static final String DEFAULT_FONT="original";
+    static final String[] COLOR_MODES={"day","night"};
+    static final int[] COLOR_MODE_LABELS={R.string.color_day,R.string.color_night};
+    static final String[] COLOR_MODE_PAPER={"#ffffff","#000000"};
+    static final String[] COLOR_MODE_INK={"#000000","#ffffff"};
     static final String[] FONTS={"original","geist","baskerville","fraunces","slab","space","atkinson"};
     static final String[] FONT_NAMES={"Source Serif 4 / EB Garamond","Geist","Libre Baskerville","Fraunces","Roboto Slab","Space Grotesk","Atkinson Hyperlegible Next"};
     static final String[] FONT_REGULAR={"NewsprintDisplay-Regular.ttf","InkGeist-Regular.ttf","InkBaskerville-Regular.ttf","InkFraunces-Regular.ttf","InkSlab-Regular.ttf","InkSpace-Regular.ttf","InkAtkinson-Regular.ttf"};
@@ -45,4 +49,5 @@ final class SharedThemeCatalog {
     static final boolean DEFAULT_HIDE_DONE=false;
     static final boolean DEFAULT_DESK=false;
     static final String DEFAULT_LANGUAGE="zh";
+    static final String DEFAULT_COLOR_MODE="day";
 }

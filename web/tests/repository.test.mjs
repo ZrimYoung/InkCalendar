@@ -21,3 +21,15 @@ test('invalid snapshot never replaces saved data',async()=>{
 test('unavailable browser storage fails explicitly',async()=>{
   await assert.rejects(openRepository({indexedDB:null}),{message:'storage_unavailable'});
 });
+
+test('old saved calendars default to day and changing mode preserves their data',async()=>{
+  const legacy=emptySnapshot();delete legacy.applied.colorMode;
+  legacy.applied.scale=118;legacy.applied.theme.style='grid';
+  legacy.events.push({id:1,date:'2026-11-07',title:'Keep this event',time:'09:30',completed:true});
+  const repo=memoryRepository(legacy),loaded=await repo.load();
+  assert.equal(loaded.data.applied.colorMode,'day');
+  loaded.data.applied.colorMode='night';await repo.save(loaded.data,loaded.revision);
+  const current=(await repo.load()).data;
+  assert.equal(current.applied.colorMode,'night');assert.equal(current.applied.scale,118);
+  assert.equal(current.applied.theme.style,'grid');assert.deepEqual(current.events,legacy.events);
+});

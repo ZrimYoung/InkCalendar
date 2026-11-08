@@ -120,6 +120,9 @@
     <string name="theme_case_normal">正常大小写</string>
     <string name="theme_case_upper">全大写</string>
     <string name="settings_appearance">外观</string>
+    <string name="color_mode">日夜模式</string>
+    <string name="color_day">日间</string>
+    <string name="color_night">夜间</string>
     <string name="settings_display">屏幕</string>
     <string name="settings_calendar">日历内容</string>
     <string name="calendar_text_size">日历字号</string>

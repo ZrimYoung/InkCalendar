@@ -1,7 +1,6 @@
 package com.inkcalendar.app;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -15,12 +14,13 @@ final class LineIcon extends Drawable {
     static final int DISPLAY=10,TYPE=11,MOON=12,TERMS=13,FLAG=14,LANGUAGE=15,PALETTE=16,MINUS=17,LAYOUT=18,ROTATE=19,SUN=20;
     private final int kind, size;
     private final boolean inverse;
+    private final InkColors colors;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    LineIcon(int kind, float density) { this(kind,density,false); }
-    LineIcon(int kind, float density, boolean inverse) {
+    LineIcon(int kind, float density, boolean inverse,InkColors colors) {
+        this.colors=colors;
         this.inverse=inverse;
         this.kind = kind; this.size = (int) (24 * density + 0.5f);
-        paint.setColor(inverse?Color.WHITE:Color.BLACK); paint.setStyle(Paint.Style.STROKE);
+        paint.setColor(inverse?colors.paper:colors.ink); paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1.6f); paint.setStrokeCap(Paint.Cap.ROUND); paint.setStrokeJoin(Paint.Join.ROUND);
     }
     @Override public void draw(Canvas canvas) {
@@ -87,7 +87,7 @@ final class LineIcon extends Drawable {
     @Override protected boolean onStateChange(int[] state) {
         boolean pressed = false;
         for (int value : state) if (value == android.R.attr.state_pressed) pressed = true;
-        int color = pressed||inverse ? Color.WHITE : Color.BLACK;
+        int color = pressed||inverse ? colors.paper : colors.ink;
         if (paint.getColor() == color) return false;
         paint.setColor(color); invalidateSelf(); return true;
     }

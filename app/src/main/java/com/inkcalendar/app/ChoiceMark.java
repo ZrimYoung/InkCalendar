@@ -1,7 +1,6 @@
 package com.inkcalendar.app;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
@@ -11,14 +10,15 @@ import android.graphics.drawable.Drawable;
 final class ChoiceMark extends Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final boolean radio;
+    private final InkColors colors;
     private final int size;
     private boolean checked;
-    ChoiceMark(float density, boolean radio) { this.radio = radio; size = Math.round(32 * density); }
+    ChoiceMark(float density, boolean radio,InkColors colors) { this.colors=colors;this.radio = radio; size = Math.round(32 * density); }
     @Override public void draw(Canvas canvas) {
         int save = canvas.save();
         canvas.translate(getBounds().left, getBounds().top);
         canvas.scale(getBounds().width() / 32f, getBounds().height() / 32f);
-        paint.setColor(Color.BLACK); paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(1.5f);
+        paint.setColor(colors.ink); paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(1.5f);
         if (radio) canvas.drawCircle(12, 16, 9, paint);
         else canvas.drawRect(3, 7, 21, 25, paint);
         if (checked) {

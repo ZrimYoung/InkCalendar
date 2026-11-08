@@ -39,29 +39,41 @@ public class WeeklySettingsTest {
     private View action(View root,String desc){for(View v:all(root))if(desc.contentEquals(v.getContentDescription()==null?"":v.getContentDescription()))return v;throw new AssertionError("Missing action "+desc);}
     private View dialog(){List<Dialog> list=ShadowDialog.getShownDialogs();for(int i=list.size()-1;i>=0;i--)if(list.get(i).isShowing())return list.get(i).getWindow().getDecorView();throw new AssertionError("No dialog");}
     private void settings(){action(main(),"Settings").performClick();}
-    private void save(){action(dialog(),"Save").performClick();}
+    private void closePage(){action(dialog(),"Close").performClick();}
     private String path(View node){if(node.getParent() instanceof ViewGroup){ViewGroup parent=(ViewGroup)node.getParent();return path(parent)+"/"+parent.indexOfChild(node);}return "";}
     private void measure(int width)throws Exception{View root=(View)field("root");root.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));root.layout(0,0,width,root.getMeasuredHeight());}
 
-    @Test public void textButtonsClampAndDraftSurvivesRotationWithoutApplying()throws Exception{
+    @Test public void textButtonsApplyImmediatelyAndSurviveRotation()throws Exception{
         assertEquals("month",DisplayOptions.read(prefs).view);assertEquals("classic",DisplayOptions.read(prefs).layout);
         settings();View panel=dialog();panel.measure(View.MeasureSpec.makeMeasureSpec(320,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));panel.layout(0,0,320,panel.getMeasuredHeight());
         ViewGroup orientations=panel.findViewWithTag("setting:orientation");int rowHeight=orientations.getChildAt(0).getHeight();assertTrue(rowHeight>=48);
         for(int i=1;i<orientations.getChildCount();i++)assertEquals("Multiline choices must share a height",rowHeight,orientations.getChildAt(i).getHeight());
         action(dialog(),"Increase text size").performClick();action(dialog(),"Increase text size").performClick();
-        assertEquals("110%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());assertFalse(prefs.contains("text_scale"));
+        assertEquals("110%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());assertEquals(110,prefs.getInt("text_scale",0));
         recreate();assertEquals("110%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());
         for(int i=0;i<10;i++)action(dialog(),"Increase text size").performClick();assertFalse(action(dialog(),"Increase text size").isEnabled());
         assertEquals("130%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());
         for(int i=0;i<12;i++)action(dialog(),"Decrease text size").performClick();assertFalse(action(dialog(),"Decrease text size").isEnabled());
-        save();assertEquals(90,prefs.getInt("text_scale",0));settings();action(dialog(),"Increase text size").performClick();action(dialog(),"Cancel").performClick();assertEquals(90,prefs.getInt("text_scale",0));
+        closePage();assertEquals(90,prefs.getInt("text_scale",0));settings();action(dialog(),"Increase text size").performClick();closePage();assertEquals(95,prefs.getInt("text_scale",0));
     }
-    @Test public void legacyLargeTextIsKeptUntilUserChangesIt(){prefs.edit().putBoolean("large",true).commit();recreate();settings();assertEquals("118%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());save();assertEquals(118,prefs.getInt("text_scale",0));}
-    @Test public void weekAndLayoutDraftSaveAndCancelTogether(){
+    @Test public void legacyLargeTextIsKeptUntilUserChangesIt(){prefs.edit().putBoolean("large",true).commit();recreate();settings();assertEquals("118%",((TextView)dialog().findViewWithTag("setting:scale-value")).getText().toString());closePage();assertFalse(prefs.contains("text_scale"));settings();action(dialog(),"Increase text size").performClick();assertEquals(123,prefs.getInt("text_scale",0));closePage();}
+    @Test public void displaySwitchesApplyToTheActivityAndOpenSettingsWithoutSaving(){
+        settings();
+        ((android.widget.CheckBox)dialog().findViewWithTag("setting:awake")).performClick();
+        assertFalse(prefs.getBoolean("awake",true));
+        assertEquals(0,activity.getWindow().getAttributes().flags&android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        ((android.widget.CheckBox)dialog().findViewWithTag("setting:full")).performClick();
+        assertFalse(prefs.getBoolean("full",true));
+        assertEquals(0,activity.getWindow().getAttributes().flags&android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        assertNotNull(dialog().findViewWithTag("setting:scale"));
+        assertTrue(all(dialog()).stream().noneMatch(v->"Save".contentEquals(v.getContentDescription()==null?"":v.getContentDescription())));
+        closePage();recreate();assertFalse(DisplayOptions.read(prefs).awake);assertFalse(DisplayOptions.read(prefs).full);
+    }
+    @Test public void weekAndLayoutApplyWithoutSavingAndRemainAfterClose(){
         settings();((RadioButton)dialog().findViewWithTag("week")).performClick();((RadioButton)dialog().findViewWithTag("balanced")).performClick();
         recreate();assertTrue(((RadioButton)dialog().findViewWithTag("week")).isChecked());assertTrue(((RadioButton)dialog().findViewWithTag("balanced")).isChecked());
-        assertEquals("month",prefs.getString("calendar_view","month"));save();assertEquals("week",prefs.getString("calendar_view",""));assertEquals("balanced",prefs.getString("landscape_layout",""));
-        settings();((RadioButton)dialog().findViewWithTag("month")).performClick();((RadioButton)dialog().findViewWithTag("classic")).performClick();action(dialog(),"Cancel").performClick();assertEquals("week",prefs.getString("calendar_view",""));assertEquals("balanced",prefs.getString("landscape_layout",""));
+        assertEquals("week",prefs.getString("calendar_view","month"));closePage();assertEquals("week",prefs.getString("calendar_view",""));assertEquals("balanced",prefs.getString("landscape_layout",""));
+        settings();((RadioButton)dialog().findViewWithTag("month")).performClick();((RadioButton)dialog().findViewWithTag("classic")).performClick();closePage();assertEquals("month",prefs.getString("calendar_view",""));assertEquals("classic",prefs.getString("landscape_layout",""));
     }
     @Test public void weekOnlyReplacesCalendarForEveryThemeAndOrientation()throws Exception{
         for(String qualifiers:new String[]{"w320dp-h640dp-port-mdpi","w773dp-h572dp-land-mdpi"}){

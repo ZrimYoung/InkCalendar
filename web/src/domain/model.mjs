@@ -28,7 +28,7 @@ export function defaultSettings(platform='web') { return clone({...catalog.defau
 export function normalizeSettings(value={},platform='web') {
   const result=defaultSettings(platform),limit=catalog.limits;
   for(const key of ['awake','full','lunar','terms','holidays','hideDone','desk'])if(typeof value[key]==='boolean')result[key]=value[key];
-  for(const [key,options] of Object.entries({view:['month','week'],layout:['classic','balanced'],orientation:['auto','landscape','portrait'],language:['zh','en']}))if(options.includes(value[key]))result[key]=value[key];
+  for(const [key,options] of Object.entries({view:['month','week'],layout:['classic','balanced'],orientation:['auto','landscape','portrait'],language:['zh','en'],colorMode:catalog.colorModes.map(m=>m.id)}))if(options.includes(value[key]))result[key]=value[key];
   if(Number.isInteger(value.scale))result.scale=Math.max(limit.scaleMin,Math.min(limit.scaleMax,value.scale));
   if([7,30].includes(value.futureDays))result.futureDays=value.futureDays;
   result.theme=normalizeTheme(value.theme);return result;

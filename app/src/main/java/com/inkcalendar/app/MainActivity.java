@@ -55,8 +55,8 @@ import java.util.TimeZone;
 import java.text.SimpleDateFormat;
 
 public final class MainActivity extends Activity {
-    private static final int PAPER = Color.WHITE, INK = Color.BLACK,
-        SECONDARY = Color.BLACK, RULE = Color.BLACK, ACCENT = Color.BLACK;
+    private InkColors colors;
+    private int PAPER, INK, SECONDARY, RULE, ACCENT;
     private EventStore store;
     private Almanac almanac;
     private LinearLayout milestonePanel;
@@ -82,10 +82,7 @@ public final class MainActivity extends Activity {
     private ThemeFonts fonts;
     private TextView firstDigit,secondDigit;
     private Dialog appearanceDialog,componentDialog;
-    private ThemeConfig settingsThemeDraft,appearanceThemeDraft,componentThemeDraft;
-    private DisplayOptions settingsDisplayDraft;
-    private Bundle restoredSettings;
-    private Runnable settingsThemeChanged,appearanceChanged;
+    private DisplayOptions settingsOptions;
     private Locale displayLocale;
     private boolean registered;
     private Dialog editor, settingsDialog, dateDialog, deleteDialog;
@@ -100,12 +97,13 @@ public final class MainActivity extends Activity {
     };
 
     @Override public void onCreate(Bundle state) {
+        preferences = getSharedPreferences("display", MODE_PRIVATE);
+        applyColorMode();
         super.onCreate(state);
         store = new EventStore(this);
         try { almanac = new Almanac(new InputStreamReader(getAssets().open("calendar/months.csv"), "UTF-8"),
             new InputStreamReader(getAssets().open("calendar/terms.csv"), "UTF-8")); }
         catch (IOException e) { throw new IllegalStateException("Missing packaged calendar data", e); }
-        preferences = getSharedPreferences("display", MODE_PRIVATE);
         applyScreenOrientation();
         applyLanguage();
         fonts=new ThemeFonts(getAssets());loadTheme();
@@ -126,10 +124,9 @@ public final class MainActivity extends Activity {
             milestoneTitle.setText(state.getString("milestoneTitle"));
         }
         if(state!=null&&state.getBoolean("settingsOpen")){
-            restoredSettings=state;showSettings();
-            if(state.getBoolean("appearanceOpen"))showAppearance(settingsThemeDraft,settingsThemeChanged);
-            if(state.getBoolean("componentsOpen"))showComponents(appearanceThemeDraft,appearanceChanged);
-            restoredSettings=null;
+            showSettings();restorePageScroll(settingsDialog,state.getInt("settingsScroll"));
+            if(state.getBoolean("appearanceOpen")){showAppearance();restorePageScroll(appearanceDialog,state.getInt("appearanceScroll"));}
+            if(state.getBoolean("componentsOpen")){showComponents();restorePageScroll(componentDialog,state.getInt("componentsScroll"));}
         }
     }
 
@@ -179,10 +176,9 @@ public final class MainActivity extends Activity {
             out.putBoolean("milestoneLunar",milestoneLunar.isChecked());out.putBoolean("milestonePinned",milestonePinned.isChecked());
         }
         if(settingsDialog!=null&&settingsDialog.isShowing()){
-            out.putBoolean("settingsOpen",true);settingsThemeDraft.bundle(out,"settingsTheme.");
-            settingsDisplayDraft.bundle(out);
-            if(appearanceDialog!=null&&appearanceDialog.isShowing()){out.putBoolean("appearanceOpen",true);appearanceThemeDraft.bundle(out,"appearanceTheme.");}
-            if(componentDialog!=null&&componentDialog.isShowing()){out.putBoolean("componentsOpen",true);componentThemeDraft.bundle(out,"componentTheme.");}
+            out.putBoolean("settingsOpen",true);out.putInt("settingsScroll",pageScroll(settingsDialog));
+            if(appearanceDialog!=null&&appearanceDialog.isShowing()){out.putBoolean("appearanceOpen",true);out.putInt("appearanceScroll",pageScroll(appearanceDialog));}
+            if(componentDialog!=null&&componentDialog.isShowing()){out.putBoolean("componentsOpen",true);out.putInt("componentsScroll",pageScroll(componentDialog));}
         }
         super.onSaveInstanceState(out);
     }
@@ -216,7 +212,23 @@ public final class MainActivity extends Activity {
         boolean full = preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL);
         if (full) getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().getDecorView().setSystemUiVisibility(full ? View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN : 0);
+        applyWindowColors(getWindow(),full);
+    }
+
+    private void applyColorMode() {
+        String mode=DisplayOptions.read(preferences).colorMode;
+        setTheme("night".equals(mode)?R.style.AppTheme_Night:R.style.AppTheme);
+        colors=InkColors.from(this);PAPER=colors.paper;INK=colors.ink;
+        SECONDARY=INK;RULE=INK;ACCENT=INK;
+    }
+    private void applyWindowColors(Window window,boolean full) {
+        int flags=full?View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_FULLSCREEN:0;
+        boolean day=PAPER==Color.WHITE;
+        if(Build.VERSION.SDK_INT>=21){window.setStatusBarColor(PAPER);window.setNavigationBarColor(PAPER);}
+        if(Build.VERSION.SDK_INT>=23&&day)flags|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if(Build.VERSION.SDK_INT>=26&&day)flags|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        if(Build.VERSION.SDK_INT>=29)window.getDecorView().setForceDarkAllowed(false);
+        window.getDecorView().setSystemUiVisibility(flags);
     }
 
     @SuppressWarnings("deprecation")
@@ -253,6 +265,7 @@ public final class MainActivity extends Activity {
 
     private void buildScreen() {
         loadTheme();textScale=DisplayOptions.read(preferences).scale/100f;
+        getWindow().setBackgroundDrawable(shape(PAPER,0));
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.setVerticalScrollBarEnabled(false);scroll.setBackgroundColor(PAPER);
         root=column();root.setPadding(dp(18),dp(12),dp(18),dp(18));scroll.addView(root);setContentView(scroll);
@@ -572,7 +585,7 @@ public final class MainActivity extends Activity {
     private EditText input(String value, int hint) {
         EditText field = new ThemeEditText(this,serif); field.setTextSize(20 * textScale); field.setTypeface(display);
         field.setTextColor(INK); field.setHintTextColor(INK); field.setIncludeFontPadding(false);
-        if("minimal".equals(theme.style)||"editorial".equals(theme.style))field.setBackground(bottomRule());else field.setBackgroundResource(R.drawable.ink_input);
+        if("minimal".equals(theme.style)||"editorial".equals(theme.style))field.setBackground(bottomRule());else field.setBackgroundResource(PAPER==Color.BLACK?R.drawable.ink_input_night:R.drawable.ink_input);
         field.setPadding(dp(12), dp(10), dp(12), dp(10));
         field.setMinimumHeight(dp(48)); field.setText(value); if (hint != 0) field.setHint(hint);
         return field;
@@ -596,7 +609,7 @@ public final class MainActivity extends Activity {
     }
     private void showPage(Dialog page, LinearLayout form) {
         ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true); scroll.setBackgroundColor(PAPER);
-        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER); scroll.addView(form); page.setContentView(scroll);
+        scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);scroll.setTag("page:scroll"); scroll.addView(form); page.setContentView(scroll);
         Window window = page.getWindow();
         if (window != null) {
             window.setBackgroundDrawable(shape(PAPER, 0)); window.setWindowAnimations(0);
@@ -605,8 +618,8 @@ public final class MainActivity extends Activity {
             if (preferences.getBoolean("awake",SharedThemeCatalog.DEFAULT_AWAKE)) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             if (preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL)) {
                 window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN);
             }
+            applyWindowColors(window,preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL));
         }
         page.show(); if (window != null) window.setLayout(-1, -1);
         form.requestFocus();
@@ -617,9 +630,9 @@ public final class MainActivity extends Activity {
         LinearLayout form = column(); form.setPadding(dp(20), dp(20), dp(20), dp(20));
         form.setBackgroundColor(PAPER);
         LinearLayout settingsHeader=row();TextView heading=label(R.string.settings,24,true);heading.setTextSize(24);settingsHeader.addView(heading,weight());form.addView(settingsHeader);
-        ThemeConfig pendingTheme=restoredSettings==null?new ThemeConfig(theme):ThemeConfig.fromBundle(restoredSettings,"settingsTheme.");settingsThemeDraft=pendingTheme;
-        settingsDisplayDraft=DisplayOptions.restore(preferences,restoredSettings);
-        DisplayOptions draft=settingsDisplayDraft;
+        ThemeConfig pendingTheme=new ThemeConfig(theme);
+        settingsOptions=DisplayOptions.read(preferences);
+        DisplayOptions draft=settingsOptions;
         addDivider(form,2,12);
         LinearLayout left=column(),right=column();
         settingsSection(left,R.string.settings_appearance,LineIcon.SETTINGS);
@@ -627,13 +640,17 @@ public final class MainActivity extends Activity {
         appearance.setPadding(dp(8),dp(12),dp(8),dp(12));appearance.setMinHeight(dp(66));appearance.setBackground(background(PAPER,0));
         appearance.setCompoundDrawablesWithIntrinsicBounds(settingIcon(LineIcon.PALETTE),null,settingIcon(LineIcon.NEXT),null);appearance.setCompoundDrawablePadding(dp(10));
         appearance.setContentDescription(getString(R.string.appearance));
-        settingsThemeChanged=()->{
+        Runnable summary=()->{
             String value=getString(R.string.appearance)+"\n"+getString(pendingTheme.label())+" · "+ThemeConfig.FONT_NAMES[ThemeConfig.index(ThemeConfig.FONTS,pendingTheme.font)];
             SpannableString text=new SpannableString(ThemeFonts.mixed(value,serif,false));text.setSpan(new RelativeSizeSpan(.75f),value.indexOf('\n')+1,value.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);appearance.setText(text);
         };
-        settingsThemeChanged.run();
-        appearance.setOnClickListener(v->showAppearance(pendingTheme,settingsThemeChanged));
+        summary.run();
+        appearance.setOnClickListener(v->showAppearance());
         left.addView(appearance);settingsScale(left,draft);
+        settingsLabel(left,R.string.color_mode,LineIcon.SUN);
+        String[] modeLabels=new String[SharedThemeCatalog.COLOR_MODE_LABELS.length];
+        for(int i=0;i<modeLabels.length;i++)modeLabels[i]=getString(SharedThemeCatalog.COLOR_MODE_LABELS[i]);
+        left.addView(settingsSegments("colorMode",SharedThemeCatalog.COLOR_MODES,modeLabels,draft.colorMode,v->draft.colorMode=v));
         settingsSection(left,R.string.settings_display,LineIcon.DISPLAY);
         settingsLabel(left,R.string.screen_orientation,LineIcon.ROTATE);
         left.addView(settingsSegments("orientation",new String[]{"auto","landscape","portrait"},new String[]{getString(R.string.orientation_auto),getString(R.string.orientation_landscape),getString(R.string.orientation_portrait)},draft.orientation,v->draft.orientation=v));
@@ -656,25 +673,59 @@ public final class MainActivity extends Activity {
         boolean wide=getResources().getConfiguration().orientation==2&&getResources().getConfiguration().screenWidthDp>=SharedThemeCatalog.WIDE_LAYOUT_MIN;
         LinearLayout body=wide?row():column();body.setGravity(Gravity.TOP);
         if(wide){body.addView(left,weight());LinearLayout.LayoutParams bounds=weight();bounds.leftMargin=dp(28);body.addView(right,bounds);}else{body.addView(left);body.addView(right);}form.addView(body);
-        settingsHeader.addView(icon(LineIcon.CANCEL,R.string.cancel,()->settingsDialog.dismiss()));
-        settingsHeader.addView(icon(LineIcon.SAVE,R.string.save,()->{
-            SharedPreferences.Editor edit=preferences.edit();draft.save(edit);
-            pendingTheme.save(edit);edit.apply();settingsDialog.dismiss();applyScreenOrientation();applyLanguage();buildScreen();applyDisplay();
-        }));
+        settingsHeader.addView(icon(LineIcon.CANCEL,R.string.close,()->settingsDialog.dismiss()));
         showPage(settingsDialog,form);
+    }
+    private void displaySettingChanged(boolean refreshPages){
+        SharedPreferences.Editor edit=preferences.edit();settingsOptions.save(edit);edit.apply();
+        applyLiveSettings(refreshPages);
+    }
+    private void themeSettingChanged(ThemeConfig value){
+        SharedPreferences.Editor edit=preferences.edit();value.save(edit);edit.apply();
+        applyLiveSettings(true);
+    }
+    private void applyLiveSettings(boolean refreshPages){
+        applyColorMode();applyLanguage();buildScreen();applyDisplay();
+        boolean full=preferences.getBoolean("full",SharedThemeCatalog.DEFAULT_FULL),awake=preferences.getBoolean("awake",SharedThemeCatalog.DEFAULT_AWAKE);
+        for(Dialog page:new Dialog[]{settingsDialog,appearanceDialog,componentDialog})if(page!=null&&page.isShowing()){
+            Window window=page.getWindow();if(window==null)continue;
+            if(full)window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);else window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            if(awake)window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            applyWindowColors(window,full);
+        }
+        if(refreshPages)rebuildOpenSettings();
+        applyScreenOrientation();
+    }
+    private int pageScroll(Dialog page){
+        if(page==null||!page.isShowing())return 0;
+        View scroll=page.getWindow().getDecorView().findViewWithTag("page:scroll");return scroll==null?0:scroll.getScrollY();
+    }
+    private void restorePageScroll(Dialog page,int position){
+        if(page==null||!page.isShowing())return;
+        ScrollView scroll=page.getWindow().getDecorView().findViewWithTag("page:scroll");
+        if(scroll!=null)scroll.post(()->scroll.scrollTo(0,position));
+    }
+    private void rebuildOpenSettings(){
+        if(settingsDialog==null||!settingsDialog.isShowing())return;
+        boolean appearanceOpen=appearanceDialog!=null&&appearanceDialog.isShowing(),componentsOpen=componentDialog!=null&&componentDialog.isShowing();
+        int settingY=pageScroll(settingsDialog),appearanceY=pageScroll(appearanceDialog),componentsY=pageScroll(componentDialog);
+        if(componentsOpen)componentDialog.dismiss();if(appearanceOpen)appearanceDialog.dismiss();settingsDialog.dismiss();
+        showSettings();restorePageScroll(settingsDialog,settingY);
+        if(appearanceOpen){showAppearance();restorePageScroll(appearanceDialog,appearanceY);}
+        if(componentsOpen){showComponents();restorePageScroll(componentDialog,componentsY);}
     }
     private interface OptionSelected{void accept(String value);}
     private interface ToggleChanged{void accept(boolean value);}
     private LineIcon settingIcon(int kind){return settingIcon(kind,false);}
-    private LineIcon settingIcon(int kind,boolean inverse){LineIcon icon=new LineIcon(kind,getResources().getDisplayMetrics().density,inverse);icon.setBounds(0,0,dp(20),dp(20));return icon;}
+    private LineIcon settingIcon(int kind,boolean inverse){LineIcon icon=new LineIcon(kind,getResources().getDisplayMetrics().density,inverse,colors);icon.setBounds(0,0,dp(20),dp(20));return icon;}
     private void settingsLabel(LinearLayout parent,int title,int kind){TextView label=label(title,15,false);label.setTextSize(15);label.setCompoundDrawables(settingIcon(kind),null,null,null);label.setCompoundDrawablePadding(dp(8));label.setPadding(0,dp(14),0,dp(10));parent.addView(label);}
     private void settingsSection(LinearLayout parent,int title,int kind){TextView label=label(title,17,true);label.setTextSize(17);label.setCompoundDrawables(settingIcon(kind),null,null,null);label.setCompoundDrawablePadding(dp(8));label.setPadding(0,dp(20),0,dp(10));parent.addView(label);parent.addView(rule(INK),new LinearLayout.LayoutParams(-1,dp(1)));}
     private void settingsNote(LinearLayout parent,int title){TextView note=label(title,12,false);note.setTextSize(12);note.setPadding(0,dp(8),0,dp(8));parent.addView(note);}
     private CheckBox settingsToggle(String key,int title,int kind,boolean checked,ToggleChanged changed){
         CheckBox toggle=check(title,checked);toggle.setTextSize(16);toggle.setTag("setting:"+key);toggle.setButtonDrawable(null);
         toggle.setPadding(dp(4),dp(12),dp(4),dp(12));toggle.setMinHeight(dp(66));
-        toggle.setCompoundDrawablePadding(dp(10));toggle.setCompoundDrawables(settingIcon(kind),null,new ToggleMark(getResources().getDisplayMetrics().density),null);
-        toggle.setOnCheckedChangeListener((button,value)->changed.accept(value));return toggle;
+        toggle.setCompoundDrawablePadding(dp(10));toggle.setCompoundDrawables(settingIcon(kind),null,new ToggleMark(getResources().getDisplayMetrics().density,colors),null);
+        toggle.setOnCheckedChangeListener((button,value)->{changed.accept(value);displaySettingChanged(false);});return toggle;
     }
     private RadioGroup settingsSegments(String key,String[] values,String[] labels,String selected,OptionSelected changed){
         RadioGroup group=new RadioGroup(this);group.setOrientation(RadioGroup.HORIZONTAL);group.setTag("setting:"+key);
@@ -685,13 +736,13 @@ public final class MainActivity extends Activity {
             option.setTextColor(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{PAPER,INK}));
             group.addView(option,new RadioGroup.LayoutParams(0,-1,1));option.setChecked(values[i].equals(selected));
         }
-        group.setOnCheckedChangeListener((g,id)->{RadioButton option=g.findViewById(id);if(option!=null)changed.accept((String)option.getTag());});return group;
+        group.setOnCheckedChangeListener((g,id)->{RadioButton option=g.findViewById(id);if(option!=null){changed.accept((String)option.getTag());displaySettingChanged("colorMode".equals(key)||"language".equals(key));}});return group;
     }
     private CheckBox settingsTile(String key,int title,int shortTitle,int kind,boolean checked,ToggleChanged changed){
         CheckBox tile=check(shortTitle,checked);tile.setContentDescription(getString(title));tile.setTag("setting:"+key);tile.setButtonDrawable(null);tile.setTextSize(14);tile.setMinWidth(0);tile.setMinimumWidth(0);tile.setMinHeight(dp(68));tile.setPadding(dp(2),dp(8),dp(2),dp(8));tile.setGravity(Gravity.CENTER);
         tile.setCompoundDrawables(null,settingIcon(kind,checked),null,null);tile.setCompoundDrawablePadding(dp(5));
         StateListDrawable states=new StateListDrawable();states.addState(new int[]{android.R.attr.state_checked},shape(INK,1));states.addState(new int[]{android.R.attr.state_pressed},shape(INK,1));states.addState(new int[]{android.R.attr.state_focused},shape(PAPER,3));states.addState(new int[]{},shape(PAPER,1));tile.setBackground(states);
-        tile.setTextColor(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{android.R.attr.state_pressed},new int[]{}},new int[]{PAPER,PAPER,INK}));tile.setOnCheckedChangeListener((b,v)->{tile.setCompoundDrawables(null,settingIcon(kind,v),null,null);changed.accept(v);});return tile;
+        tile.setTextColor(new ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{android.R.attr.state_pressed},new int[]{}},new int[]{PAPER,PAPER,INK}));tile.setOnCheckedChangeListener((b,v)->{tile.setCompoundDrawables(null,settingIcon(kind,v),null,null);changed.accept(v);displaySettingChanged(false);});return tile;
     }
     private void settingsScale(LinearLayout parent,DisplayOptions draft){
         LinearLayout caption=row();TextView title=label(R.string.calendar_text_size,15,false);title.setTextSize(15);title.setCompoundDrawables(settingIcon(LineIcon.TYPE),null,null,null);title.setCompoundDrawablePadding(dp(8));caption.addView(title,weight());
@@ -700,17 +751,17 @@ public final class MainActivity extends Activity {
         SeekBar slider=new InkSeekBar(this);slider.setTag("setting:scale");slider.setContentDescription(getString(R.string.calendar_text_size));slider.setMax(SharedThemeCatalog.SCALE_MAX-SharedThemeCatalog.SCALE_MIN);slider.setProgress(draft.scale-SharedThemeCatalog.SCALE_MIN);
         TextView sample=text(getString(R.string.text_size_sample),18,false);sample.setTag("setting:scale-sample");sample.setPadding(0,dp(8),0,dp(12));
         Runnable refresh=()->{value.setText(getString(R.string.text_scale_value,draft.scale));slider.setProgress(draft.scale-SharedThemeCatalog.SCALE_MIN);sample.setTextSize(18*draft.scale/100f);minus.setEnabled(draft.scale>SharedThemeCatalog.SCALE_MIN);plus.setEnabled(draft.scale<SharedThemeCatalog.SCALE_MAX);};
-        minus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale-SharedThemeCatalog.SCALE_STEP);refresh.run();});plus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale+SharedThemeCatalog.SCALE_STEP);refresh.run();});
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){if(fromUser){draft.scale=SharedThemeCatalog.SCALE_MIN+Math.round(progress/(float)SharedThemeCatalog.SCALE_STEP)*SharedThemeCatalog.SCALE_STEP;refresh.run();}}public void onStartTrackingTouch(SeekBar bar){}public void onStopTrackingTouch(SeekBar bar){}});
+        minus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale-SharedThemeCatalog.SCALE_STEP);refresh.run();displaySettingChanged(false);});plus.setOnClickListener(v->{draft.scale=DisplayOptions.clamp(draft.scale+SharedThemeCatalog.SCALE_STEP);refresh.run();displaySettingChanged(false);});
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){if(fromUser){int before=draft.scale;draft.scale=SharedThemeCatalog.SCALE_MIN+Math.round(progress/(float)SharedThemeCatalog.SCALE_STEP)*SharedThemeCatalog.SCALE_STEP;refresh.run();if(before!=draft.scale)displaySettingChanged(false);}}public void onStartTrackingTouch(SeekBar bar){}public void onStopTrackingTouch(SeekBar bar){}});
         controls.addView(minus,new LinearLayout.LayoutParams(dp(44),dp(44)));LinearLayout.LayoutParams middle=weight();middle.leftMargin=dp(12);middle.rightMargin=dp(12);controls.addView(slider,middle);controls.addView(plus,new LinearLayout.LayoutParams(dp(44),dp(44)));parent.addView(controls);parent.addView(sample);refresh.run();
     }
-    private void settingActions(LinearLayout form,Runnable cancel,Runnable save){LinearLayout head=(LinearLayout)form.getChildAt(0);head.addView(icon(LineIcon.CANCEL,R.string.cancel,cancel));head.addView(icon(LineIcon.SAVE,R.string.save,save));}
+    private void settingClose(LinearLayout form,Runnable close){LinearLayout head=(LinearLayout)form.getChildAt(0);head.addView(icon(LineIcon.CANCEL,R.string.close,close));}
     private void themeSection(LinearLayout form,int title){TextView label=label(title,17,true);label.setPadding(0,dp(20),0,dp(8));form.addView(label);}
-    private void showAppearance(ThemeConfig destination,Runnable changed){
-        ThemeConfig draft=restoredSettings==null?new ThemeConfig(destination):ThemeConfig.fromBundle(restoredSettings,"appearanceTheme.");appearanceThemeDraft=draft;
+    private void showAppearance(){
+        ThemeConfig draft=new ThemeConfig(theme);
         appearanceDialog=new Dialog(this);appearanceDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form=pageForm(R.string.appearance);
-        settingActions(form,()->appearanceDialog.dismiss(),()->{destination.font=draft.font;destination.style=draft.style;destination.overrides.clear();destination.overrides.putAll(draft.overrides);changed.run();appearanceDialog.dismiss();});
+        settingClose(form,()->appearanceDialog.dismiss());
         themeSection(form,R.string.theme_style);ChoiceGrid gallery=new ChoiceGrid(this);gallery.setTag("choices:styles");form.addView(gallery);
         final Runnable[] update={null};
         update[0]=()->{
@@ -718,23 +769,19 @@ public final class MainActivity extends Activity {
             for(int i=0;i<ThemeConfig.STYLES.length;i++){
                 final String id=ThemeConfig.STYLES[i];ThemeConfig sample=new ThemeConfig(draft);if(!draft.style.equals(id))sample.chooseStyle(id);
                 String title=getString(ThemeConfig.STYLE_LABELS[i])+(draft.style.equals(id)&&!draft.overrides.isEmpty()?" · "+getString(R.string.theme_custom):"");
-                gallery.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);update[0].run();}));
+                gallery.addView(themeCard(sample,null,title,draft.style.equals(id),()->{draft.chooseStyle(id);themeSettingChanged(draft);}));
             }
-        };update[0].run();appearanceChanged=update[0];
+        };update[0].run();
         themeSection(form,R.string.theme_font);form.addView(label(R.string.theme_font_note,13,false));
         ChoiceGrid choices=new ChoiceGrid(this);choices.setTag("choices:fonts");
         for(int i=0;i<ThemeConfig.FONTS.length;i++){
             final String id=ThemeConfig.FONTS[i];
             choices.addView(fontCard(id,ThemeConfig.FONT_NAMES[i],id.equals(draft.font),()->{
-                draft.font=id;
-                for(String font:ThemeConfig.FONTS){
-                    choices.findViewWithTag("font:"+font).setSelected(id.equals(font));
-                    ((RadioButton)choices.findViewWithTag(font)).setChecked(id.equals(font));
-                }
+                draft.font=id;themeSettingChanged(draft);
             }));
         }
         form.addView(choices);
-        form.addView(button(getString(R.string.theme_components),()->showComponents(draft,update[0])));
+        form.addView(button(getString(R.string.theme_components),this::showComponents));
         showPage(appearanceDialog,form);
     }
     private void selectionCard(LinearLayout card){
@@ -754,7 +801,7 @@ public final class MainActivity extends Activity {
         sample.setTypeface(fonts.latin(id,false));sample.setIncludeFontPadding(false);
         sample.setGravity(Gravity.CENTER);sample.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         preview.addView(sample,new FrameLayout.LayoutParams(-1,-1));
-        RadioButton mark=new RadioButton(this);mark.setTag(id);mark.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density,true));
+        RadioButton mark=new RadioButton(this);mark.setTag(id);mark.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density,true,colors));
         mark.setChecked(chosen);mark.setPadding(0,0,0,0);mark.setClickable(false);mark.setFocusable(false);
         mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         preview.addView(mark,new FrameLayout.LayoutParams(dp(32),dp(32),Gravity.TOP|Gravity.END));
@@ -768,14 +815,14 @@ public final class MainActivity extends Activity {
     }
     private View themeCard(ThemeConfig value,String component,String title,boolean chosen,Runnable action){
         LinearLayout card=column();card.setPadding(dp(6),dp(6),dp(6),dp(6));selectionCard(card);card.setSelected(chosen);
-        ThemePreview preview=new ThemePreview(this,value,component,settingsDialog!=null&&settingsDialog.isShowing()?settingsDisplayDraft:DisplayOptions.read(preferences));card.addView(preview,new LinearLayout.LayoutParams(-1,-2));
+        ThemePreview preview=new ThemePreview(this,value,component,settingsDialog!=null&&settingsDialog.isShowing()?settingsOptions:DisplayOptions.read(preferences));card.addView(preview,new LinearLayout.LayoutParams(-1,-2));
         RadioButton caption=new RadioButton(this);caption.setText(title);styleChoice(caption,true);caption.setTextSize(14*textScale);caption.setChecked(chosen);caption.setClickable(false);caption.setFocusable(false);caption.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);card.addView(caption);
         card.setContentDescription(title+(chosen?", "+getString(R.string.selected):""));card.setOnClickListener(v->action.run());return card;
     }
-    private void showComponents(ThemeConfig destination,Runnable changed){
-        ThemeConfig draft=restoredSettings==null?new ThemeConfig(destination):ThemeConfig.fromBundle(restoredSettings,"componentTheme.");componentThemeDraft=draft;componentDialog=new Dialog(this);componentDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+    private void showComponents(){
+        ThemeConfig draft=new ThemeConfig(theme);componentDialog=new Dialog(this);componentDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout form=pageForm(R.string.theme_components),sections=column();
-        settingActions(form,()->componentDialog.dismiss(),()->{destination.overrides.clear();destination.overrides.putAll(draft.overrides);changed.run();componentDialog.dismiss();});
+        settingClose(form,()->componentDialog.dismiss());
         final Runnable[] update={null};update[0]=()->{
             sections.removeAllViews();
             for(int i=0;i<ThemeConfig.KEYS.length;i++){
@@ -783,12 +830,12 @@ public final class MainActivity extends Activity {
                 ChoiceGrid choices=new ChoiceGrid(this);choices.setTag("choices:"+key);
                 for(int j=0;j<ThemeConfig.OPTIONS[i].length;j++){
                     final String value=ThemeConfig.OPTIONS[i][j];ThemeConfig sample=new ThemeConfig(draft);sample.choose(key,value);
-                    choices.addView(themeCard(sample,key,getString(ThemeConfig.OPTION_LABELS[i][j]),draft.is(key,value),()->{draft.choose(key,value);update[0].run();}));
+                    choices.addView(themeCard(sample,key,getString(ThemeConfig.OPTION_LABELS[i][j]),draft.is(key,value),()->{draft.choose(key,value);themeSettingChanged(draft);}));
                 }
                 sections.addView(choices);
             }
         };
-        form.addView(button(getString(R.string.theme_reset),()->{draft.overrides.clear();update[0].run();}));form.addView(sections);update[0].run();showPage(componentDialog,form);
+        form.addView(button(getString(R.string.theme_reset),()->{draft.overrides.clear();themeSettingChanged(draft);}));form.addView(sections);update[0].run();showPage(componentDialog,form);
     }
     private Runnable refreshFuture, refreshMilestones;
     private boolean english() { return displayLocale.equals(Locale.US); }
@@ -852,7 +899,7 @@ public final class MainActivity extends Activity {
         body.setBackground(background(PAPER,0));body.setMinimumHeight(dp(64));body.setFocusable(true);
         body.setContentDescription(when+", "+event.title+", "+getString(R.string.edit_event));body.setOnClickListener(v->showEditor(event.id,event.date,event.title,event.time));
         item.addView(body,weight());LinearLayout.LayoutParams bounds=new LinearLayout.LayoutParams(-1,-2);parent.addView(item,bounds);
-        if(theme.is("agenda","stacked")||theme.is("agenda","ledger")||theme.is("agenda","cards")){View line=rule(INK);if(!theme.is("agenda","stacked"))line.setBackground(new InkRule(getResources().getDisplayMetrics().density,true,false));parent.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));}
+        if(theme.is("agenda","stacked")||theme.is("agenda","ledger")||theme.is("agenda","cards")){View line=rule(INK);if(!theme.is("agenda","stacked"))line.setBackground(new InkRule(getResources().getDisplayMetrics().density,true,false,colors));parent.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));}
     }
     private void refreshOpenLists() {
         if(futureDialog!=null && futureDialog.isShowing() && refreshFuture!=null)refreshFuture.run();
@@ -991,7 +1038,7 @@ public final class MainActivity extends Activity {
         styleChoice(box, false); box.setChecked(checked); return box;
     }
     private void styleChoice(android.widget.CompoundButton choice, boolean radio) {
-        choice.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density, radio));
+        choice.setButtonDrawable(new ChoiceMark(getResources().getDisplayMetrics().density, radio,colors));
         choice.setTextColor(INK); choice.setTextSize(18 * textScale);
         choice.setTypeface(fontFor(choice.getText(), display));
         choice.setIncludeFontPadding(false);
@@ -1024,7 +1071,7 @@ public final class MainActivity extends Activity {
         return view;
     }
     private Button button(String value, Runnable action) {
-        Button b = new Button(this); b.setText(value); b.setTextColor(Color.BLACK); b.setTextSize(16 * textScale);
+        Button b = new Button(this); b.setText(value); b.setTextSize(16 * textScale);
         b.setTypeface(fontFor(value, display));
         b.setIncludeFontPadding(false); b.setText(StableTextView.uniformLines(ThemeFonts.mixed(value,serif,false), b));
         b.setTextColor(interactiveText(PAPER, INK));
@@ -1035,7 +1082,7 @@ public final class MainActivity extends Activity {
     private ImageButton icon(int kind, int label, Runnable action) {
         ImageButton button = new ImageButton(this);
         boolean solid=theme.is("buttons","solid");
-        button.setImageDrawable(new LineIcon(kind, getResources().getDisplayMetrics().density,solid));
+        button.setImageDrawable(new LineIcon(kind, getResources().getDisplayMetrics().density,solid,colors));
         button.setPadding(dp(12), dp(12), dp(12), dp(12));
         LinearLayout.LayoutParams bounds = new LinearLayout.LayoutParams(dp(48), dp(48));
         bounds.leftMargin = dp(8); button.setLayoutParams(bounds);
@@ -1069,7 +1116,7 @@ public final class MainActivity extends Activity {
         // Chinese spans select the paired font per run, including mixed-language event titles.
         return latin;
     }
-    private android.graphics.drawable.Drawable bottomRule(){return new InkRule(getResources().getDisplayMetrics().density,false,true);}
+    private android.graphics.drawable.Drawable bottomRule(){return new InkRule(getResources().getDisplayMetrics().density,false,true,colors);}
     private GradientDrawable shape(int color, int border) {
         GradientDrawable d = new GradientDrawable(); d.setColor(color);
         if (border > 0) d.setStroke(dp(border), INK); return d;

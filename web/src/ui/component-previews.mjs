@@ -1,8 +1,9 @@
 import catalog from '../generated/catalog.mjs';
 import {resolveTheme} from '../domain/model.mjs';
+import {colorsFor} from './colors.mjs';
 
-export function drawDateSample(c,r,font,x,y,w,h,column=false){
-  c.save();c.fillStyle=c.strokeStyle='#000';c.lineWidth=1;
+export function drawDateSample(c,r,font,x,y,w,h,column=false,palette=colorsFor()){
+  c.save();c.fillStyle=c.strokeStyle=palette.ink;c.lineWidth=1;
   const heading=value=>r.caps==='on'?value.toUpperCase():value;
   function text(value,px,py,size,bold=false,align='left',maxWidth=w){
     c.font=`${bold?font.boldWeight:400} ${size}px ${font.family},serif`;
@@ -11,7 +12,7 @@ export function drawDateSample(c,r,font,x,y,w,h,column=false){
   }
   if(r.date==='masthead'){
     text('November',x,y+h*.14,h*.14);c.beginPath();c.moveTo(x,y+h*.24);c.lineTo(x+w,y+h*.24);c.stroke();
-    text('07',x,y+h*.77,h*.72,true);c.fillRect(x,y+h*.84,w,h*.16);c.fillStyle='#fff';text(heading('Saturday'),x+w/2,y+h*.96,h*.11,false,'center',w-6);
+    text('07',x,y+h*.77,h*.72,true);c.fillRect(x,y+h*.84,w,h*.16);c.fillStyle=palette.paper;text(heading('Saturday'),x+w/2,y+h*.96,h*.11,false,'center',w-6);
   }else if(r.date==='tiles'){
     text('0',x+w*.26,y+h*.64,h*.74,true,'center',w*.44);text('7',x+w*.73,y+h*.84,h*.74,true,'center',w*.44);
     text('November',x+w/2,y+h*.99,h*.12,false,'center');
@@ -28,10 +29,10 @@ export function drawDateSample(c,r,font,x,y,w,h,column=false){
 }
 
 /** Focused vector samples for the same component recipes used by the calendar. */
-export function drawComponentPreview(canvas,theme,key,{landscape=false,wide=false,weekly=false,balanced=false}={}) {
-  const r=resolveTheme(theme),font=catalog.fonts.find(f=>f.id===theme.font)||catalog.fonts[0],c=canvas.getContext('2d');
+export function drawComponentPreview(canvas,theme,key,{landscape=false,wide=false,weekly=false,balanced=false,colorMode}={}) {
+  const palette=colorsFor(colorMode),r=resolveTheme(theme),font=catalog.fonts.find(f=>f.id===theme.font)||catalog.fonts[0],c=canvas.getContext('2d');
   canvas.width=296;canvas.height=192;
-  c.setTransform(2,0,0,2,0,0);c.fillStyle='#fff';c.fillRect(0,0,148,96);c.fillStyle=c.strokeStyle='#000';c.lineWidth=1;
+  c.setTransform(2,0,0,2,0,0);c.fillStyle=palette.paper;c.fillRect(0,0,148,96);c.fillStyle=c.strokeStyle=palette.ink;c.lineWidth=1;
   function text(value,x,y,size=8,bold=false,align='left'){
     c.font=`${bold?font.boldWeight:400} ${size}px ${font.family},serif`;c.textAlign=align;c.fillText(value,x,y);
   }
@@ -41,22 +42,22 @@ export function drawComponentPreview(canvas,theme,key,{landscape=false,wide=fals
   }
   function box(x,y,w,h,fill=false){if(fill)c.fillRect(x,y,w,h);else c.strokeRect(x,y,w,h);}
   const heading=value=>r.caps==='on'?value.toUpperCase():value;
-  const hero=(x,y,w,column=false)=>drawDateSample(c,r,font,x,13,w,70,column);
+  const hero=(x,y,w,column=false)=>drawDateSample(c,r,font,x,13,w,70,column,palette);
   function calendar(x,y,w,h,rows=3){
     const count=weekly?7:rows,step=h/count,col=w/7;
     for(let row=0;row<count;row++){
       if(weekly){
         const selected=row===5,center=x+8,top=y+row*step;
-        if(selected&&r.calendar==='ruled'){box(x,top,16,step,true);c.fillStyle='#fff';}
-        if(selected&&r.calendar==='open'){c.beginPath();c.arc(center,top+step/2,Math.min(6,step*.42),0,Math.PI*2);c.fill();c.fillStyle='#fff';}
-        text(String(row+2),center,top+step*.7,Math.min(8,step*.7),selected,'center');c.fillStyle='#000';
+        if(selected&&r.calendar==='ruled'){box(x,top,16,step,true);c.fillStyle=palette.paper;}
+        if(selected&&r.calendar==='open'){c.beginPath();c.arc(center,top+step/2,Math.min(6,step*.42),0,Math.PI*2);c.fill();c.fillStyle=palette.paper;}
+        text(String(row+2),center,top+step*.7,Math.min(8,step*.7),selected,'center');c.fillStyle=palette.ink;
         line(x+25,top+step/2,x+w-3);
         if(selected&&r.calendar==='plain')line(x+2,top+step-1,x+14);
       }else for(let column=0;column<7;column++){
         const selected=row===1&&column===3,center=x+(column+.5)*col,top=y+row*step;
-        if(selected&&r.calendar==='ruled'){box(x+column*col,top,col,step,true);c.fillStyle='#fff';}
-        if(selected&&r.calendar==='open'){c.beginPath();c.arc(center,top+step/2,Math.min(7,step*.4),0,Math.PI*2);c.fill();c.fillStyle='#fff';}
-        text(String(row*7+column+1),center,top+step*.68,Math.min(9,step*.7),selected,'center');c.fillStyle='#000';
+        if(selected&&r.calendar==='ruled'){box(x+column*col,top,col,step,true);c.fillStyle=palette.paper;}
+        if(selected&&r.calendar==='open'){c.beginPath();c.arc(center,top+step/2,Math.min(7,step*.4),0,Math.PI*2);c.fill();c.fillStyle=palette.paper;}
+        text(String(row*7+column+1),center,top+step*.68,Math.min(9,step*.7),selected,'center');c.fillStyle=palette.ink;
         if(selected&&r.calendar==='plain')line(center-5,top+step-2,center+5);
       }
       if(r.calendar==='ruled')line(x,y+(row+1)*step,x+w);
@@ -79,10 +80,10 @@ export function drawComponentPreview(canvas,theme,key,{landscape=false,wide=fals
     for(let i=0;i<3;i++){
       const x=23+i*37,solid=r.buttons==='solid';
       if(r.buttons!=='bare')box(x,34,27,27,solid);
-      c.strokeStyle=solid?'#fff':'#000';
+      c.strokeStyle=solid?palette.paper:palette.ink;
       if(i===2){box(x+7,41,13,12);line(x+7,45,x+20);}
       else{line(x+7,47,x+20);if(i===1)line(x+13.5,41,x+13.5,54);}
-      c.strokeStyle='#000';
+      c.strokeStyle=palette.ink;
     }
   }else if(key==='flow'){
     if(wide&&balanced){

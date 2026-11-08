@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -15,6 +14,7 @@ import android.view.View;
 final class ThemePreview extends View {
     private static final String[] WEEK_DAYS={"M","T","W","T","F","S","S"};
     private final ThemeConfig theme;
+    private final InkColors colors;
     private final String component;
     private final boolean weekly,balanced;
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -25,7 +25,7 @@ final class ThemePreview extends View {
         this(context,theme,component,DisplayOptions.read(context.getSharedPreferences("display",Context.MODE_PRIVATE)));
     }
     ThemePreview(Context context,ThemeConfig theme,String component,DisplayOptions options){
-        super(context);this.theme=new ThemeConfig(theme);this.component=component;
+        super(context);this.colors=InkColors.forMode(options.colorMode);this.theme=new ThemeConfig(theme);this.component=component;
         weekly="week".equals(options.view);balanced="balanced".equals(options.layout);
         ThemeFonts fonts=new ThemeFonts(context.getAssets());
         regular=fonts.latin(component==null?"original":theme.font,false);bold=fonts.latin(component==null?"original":theme.font,true);
@@ -44,12 +44,12 @@ final class ThemePreview extends View {
     }
 
     @Override protected void onDraw(Canvas canvas){
-        super.onDraw(canvas);canvas.drawColor(Color.WHITE);
+        super.onDraw(canvas);canvas.drawColor(colors.paper);
         if(getWidth()==0||getHeight()==0)return;
         float scale=Math.min(getWidth()/previewWidth(),getHeight()/previewHeight());
         int save=canvas.save();
         canvas.translate((getWidth()-previewWidth()*scale)/2,(getHeight()-previewHeight()*scale)/2);
-        canvas.scale(scale,scale);paint.setColor(Color.BLACK);
+        canvas.scale(scale,scale);paint.setColor(colors.ink);
         if(component==null)style(canvas);else component(canvas);
         canvas.restoreToCount(save);
     }
@@ -109,11 +109,11 @@ final class ThemePreview extends View {
             for(int col=0;col<7;col++){
                 float center=x+(col+.5f)*column;int value=fullMonth?row*7+col-5:row*7+col+2;
                 boolean selected=value==6;int day=value<1?31+value:value>30?value-30:value;
-                if(selected&&theme.is("calendar","ruled")){box(c,center-column/2,top-1,column,step,true);paint.setColor(Color.WHITE);}
+                if(selected&&theme.is("calendar","ruled")){box(c,center-column/2,top-1,column,step,true);paint.setColor(colors.paper);}
                 else if(selected&&theme.is("calendar","open")){
-                    paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.4f,Math.min(6,step*.5f),paint);paint.setColor(Color.WHITE);
+                    paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.4f,Math.min(6,step*.5f),paint);paint.setColor(colors.paper);
                 }
-                text(c,String.valueOf(day),center,top+step*.7f,Math.min(8,step*.7f),selected,Paint.Align.CENTER);paint.setColor(Color.BLACK);
+                text(c,String.valueOf(day),center,top+step*.7f,Math.min(8,step*.7f),selected,Paint.Align.CENTER);paint.setColor(colors.ink);
                 if(selected&&theme.is("calendar","plain"))line(c,center-5,top+step-1,center+5,top+step-1);
             }
             if(theme.is("calendar","ruled"))line(c,x,top+step-1,x+width,top+step-1,.5f);
@@ -124,9 +124,9 @@ final class ThemePreview extends View {
         float step=height/7;
         for(int i=0;i<7;i++){
             float top=y+i*step,center=x+Math.min(8,width*.08f);boolean selected=i==4;
-            if(selected&&theme.is("calendar","ruled")){box(c,x,top+1,15,Math.max(3,step-2),true);paint.setColor(Color.WHITE);}
-            else if(selected&&theme.is("calendar","open")){paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.5f,Math.min(6,step*.42f),paint);paint.setColor(Color.WHITE);}
-            text(c,String.valueOf(i+2),center,top+step*.7f,Math.min(8,step*.65f),selected,Paint.Align.CENTER);paint.setColor(Color.BLACK);
+            if(selected&&theme.is("calendar","ruled")){box(c,x,top+1,15,Math.max(3,step-2),true);paint.setColor(colors.paper);}
+            else if(selected&&theme.is("calendar","open")){paint.setStyle(Paint.Style.FILL);c.drawCircle(center,top+step*.5f,Math.min(6,step*.42f),paint);paint.setColor(colors.paper);}
+            text(c,String.valueOf(i+2),center,top+step*.7f,Math.min(8,step*.65f),selected,Paint.Align.CENTER);paint.setColor(colors.ink);
             if(selected&&theme.is("calendar","plain"))line(c,x+2,top+step-1,x+14,top+step-1);
             line(c,x+22,top+step*.5f,x+width-3,top+step*.5f,.5f);
             if(theme.is("calendar","ruled"))line(c,x,top+step,x+width,top+step,.5f);
@@ -158,8 +158,8 @@ final class ThemePreview extends View {
             for(int i=0;i<3;i++){
                 float x=24+i*37;boolean solid=theme.is("buttons","solid");
                 if(!theme.is("buttons","bare"))box(c,x,32,26,26,solid);
-                paint.setColor(solid?Color.WHITE:Color.BLACK);line(c,x+7,45,x+19,45);
-                if(i==1)line(c,x+13,39,x+13,51);paint.setColor(Color.BLACK);
+                paint.setColor(solid?colors.paper:colors.ink);line(c,x+7,45,x+19,45);
+                if(i==1)line(c,x+13,39,x+13,51);paint.setColor(colors.ink);
             }
         }else if("flow".equals(component)){
             if(wideLandscape()&&balanced){
@@ -191,8 +191,8 @@ final class ThemePreview extends View {
         String weekday=theme.is("caps","on")?"SATURDAY":"Saturday";
         if(theme.is("date","masthead")){
             sampleText(c,"November",x,y+h*.14f,h*.14f,w,false,Paint.Align.LEFT);line(c,x,y+h*.24f,x+w,y+h*.24f);
-            sampleText(c,"07",x,y+h*.77f,h*.72f,w,true,Paint.Align.LEFT);box(c,x,y+h*.84f,w,h*.16f,true);paint.setColor(Color.WHITE);
-            sampleText(c,weekday,x+w/2,y+h*.96f,h*.11f,w-6,false,Paint.Align.CENTER);paint.setColor(Color.BLACK);
+            sampleText(c,"07",x,y+h*.77f,h*.72f,w,true,Paint.Align.LEFT);box(c,x,y+h*.84f,w,h*.16f,true);paint.setColor(colors.paper);
+            sampleText(c,weekday,x+w/2,y+h*.96f,h*.11f,w-6,false,Paint.Align.CENTER);paint.setColor(colors.ink);
         }else if(theme.is("date","tiles")){
             sampleText(c,"0",x+w*.26f,y+h*.64f,h*.74f,w*.44f,true,Paint.Align.CENTER);sampleText(c,"7",x+w*.73f,y+h*.84f,h*.74f,w*.44f,true,Paint.Align.CENTER);
             sampleText(c,"November",x+w/2,y+h*.99f,h*.12f,w,false,Paint.Align.CENTER);
@@ -213,11 +213,11 @@ final class ThemePreview extends View {
         for(int r=0;r<3;r++){
             for(int col=0;col<7;col++){
                 float x=15+col*19,top=y+r*step;boolean selected=r==1&&col==3;
-                if(selected&&theme.is("calendar","ruled")){box(c,x-5,top-1,19,step,true);paint.setColor(Color.WHITE);}
+                if(selected&&theme.is("calendar","ruled")){box(c,x-5,top-1,19,step,true);paint.setColor(colors.paper);}
                 else if(selected&&theme.is("calendar","open")){
-                    paint.setStyle(Paint.Style.FILL);c.drawCircle(x+3,top+step/2-1,Math.min(6,step/2),paint);paint.setColor(Color.WHITE);
+                    paint.setStyle(Paint.Style.FILL);c.drawCircle(x+3,top+step/2-1,Math.min(6,step/2),paint);paint.setColor(colors.paper);
                 }
-                text(c,String.valueOf(r*7+col+1),x,top+step/2+2,Math.min(8,step*.7f));paint.setColor(Color.BLACK);
+                text(c,String.valueOf(r*7+col+1),x,top+step/2+2,Math.min(8,step*.7f));paint.setColor(colors.ink);
                 if(selected&&theme.is("calendar","plain"))line(c,x-1,top+step/2+5,x+9,top+step/2+5);
             }
             if(theme.is("calendar","ruled"))line(c,10,y+(r+1)*step-1,138,y+(r+1)*step-1);

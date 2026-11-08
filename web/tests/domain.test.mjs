@@ -8,6 +8,9 @@ import {calendarFitScale} from '../src/domain/layout.mjs';
 import {validateEvent,validateMilestone,validateSnapshot,emptySnapshot,normalizeSettings,normalizeTheme,resolveTheme,eventsBetween,compareMilestones,translate,plural} from '../src/domain/model.mjs';
 
 const fixtures=JSON.parse(await readFile(new URL('../../shared/parity-cases.json',import.meta.url),'utf8'));
+for(const c of fixtures.colorModes)test('shared color mode migration: '+c.value,()=>{
+  assert.equal(normalizeSettings({colorMode:c.value}).colorMode,c.expected);
+});
 for(const c of fixtures.dates)test('shared calendar: '+c.date,()=>{
   assert.equal(validDate(c.date),true);assert.equal(weekStart(c.date),c.weekStart);
   const days=monthGrid(c.date);assert.equal(days.length,42);assert.equal(days[0],c.gridFirst);assert.equal(days[41],c.gridLast);
