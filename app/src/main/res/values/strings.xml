@@ -47,6 +47,8 @@
     <string name="holiday_note">China holidays; official days off and make-up workdays are included for 2026. Other years show festival names only. Schedule updates come with app updates.</string>
     <string name="holiday_unknown">Workday schedule unavailable for this year</string>
     <string name="hide_completed">Hide completed events</string>
+    <string name="hide_agenda">Hide agenda</string>
+    <string name="hide_milestones">Hide milestones</string>
     <string name="completed">Completed</string>
     <string name="mark_complete">Mark complete</string>
     <string name="mark_incomplete">Mark incomplete</string>
@@ -58,7 +60,7 @@
     <string name="close">Close</string>
     <string name="jump_date">Jump to date</string>
     <string name="display_mode">Desk display mode</string>
-    <string name="display_note">Shows today, pinned milestones and up to three upcoming unfinished events. Turn off in Settings to return to the month calendar.</string>
+    <string name="display_note">Emphasizes today with visible milestones and upcoming unfinished events.</string>
     <string name="milestones">Milestones</string>
     <string name="add_milestone">Add milestone</string>
     <string name="edit_milestone">Edit milestone</string>

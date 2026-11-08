@@ -47,6 +47,8 @@
     <string name="holiday_note">中国节日；已收录 2026 年官方放假和补班安排。其他年份仅显示节日名称，调休数据随版本更新。</string>
     <string name="holiday_unknown">本年调休数据未收录</string>
     <string name="hide_completed">隐藏已完成事项</string>
+    <string name="hide_agenda">隐藏日程</string>
+    <string name="hide_milestones">隐藏里程碑</string>
     <string name="completed">已完成</string>
     <string name="mark_complete">标记完成</string>
     <string name="mark_incomplete">标记未完成</string>
@@ -58,7 +60,7 @@
     <string name="close">关闭</string>
     <string name="jump_date">跳转日期</string>
     <string name="display_mode">桌面展示模式</string>
-    <string name="display_note">突出今天、置顶纪念日和最多三条近期未完成事项。在设置中可返回月历模式。</string>
+    <string name="display_note">突出今天，显示已开启的里程碑与近期未完成日程。</string>
     <string name="milestones">纪念日与倒计时</string>
     <string name="add_milestone">添加纪念日或倒计时</string>
     <string name="edit_milestone">编辑纪念日或倒计时</string>

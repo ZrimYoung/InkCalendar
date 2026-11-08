@@ -101,6 +101,23 @@ public class PlatformParityTest {
         assertEquals(contract.getJSONObject("limits").getInt("scaleMin"),DisplayOptions.clamp(Integer.MIN_VALUE));
         assertEquals(contract.getJSONObject("limits").getInt("scaleMax"),DisplayOptions.clamp(Integer.MAX_VALUE));
     }
+    @Test public void independentHomeVisibilityMigratesAndPersistsSharedCases() throws Exception {
+        android.content.SharedPreferences prefs=org.robolectric.RuntimeEnvironment.getApplication().getSharedPreferences("home-visibility-parity",0);
+        JSONArray cases=fixtures.getJSONArray("homeVisibility");
+        for(int i=0;i<cases.length();i++){
+            JSONObject c=cases.getJSONObject(i),input=c.getJSONObject("input");
+            android.content.SharedPreferences.Editor edit=prefs.edit().clear();
+            if(input.has("hideAgenda"))edit.putBoolean("hide_agenda",input.getBoolean("hideAgenda"));
+            if(input.has("hideMilestones"))edit.putBoolean("hide_milestones",input.getBoolean("hideMilestones"));
+            edit.commit();DisplayOptions options=DisplayOptions.read(prefs);
+            assertEquals(c.getBoolean("hideAgenda"),options.hideAgenda);assertEquals(c.getBoolean("hideMilestones"),options.hideMilestones);
+            android.os.Bundle bundle=new android.os.Bundle();options.bundle(bundle);prefs.edit().clear().commit();
+            DisplayOptions restored=DisplayOptions.restore(prefs,bundle);
+            edit=prefs.edit();restored.save(edit);edit.commit();
+            assertEquals(c.getBoolean("hideAgenda"),DisplayOptions.read(prefs).hideAgenda);
+            assertEquals(c.getBoolean("hideMilestones"),DisplayOptions.read(prefs).hideMilestones);
+        }
+    }
     @Test public void colorModeMigrationAndPalettesMatchSharedCases() throws Exception {
         android.content.SharedPreferences prefs=org.robolectric.RuntimeEnvironment.getApplication().getSharedPreferences("color-mode-parity",0);
         JSONArray cases=fixtures.getJSONArray("colorModes");

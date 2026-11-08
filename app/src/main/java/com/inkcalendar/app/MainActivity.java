@@ -293,6 +293,10 @@ public final class MainActivity extends Activity {
         milestonePanel=column();agenda=column();agenda.setPadding(0,dp(10),0,0);
         LinearLayout agendaArea=column();addDivider(agendaArea,theme.ruleWidth(),12);agendaArea.addView(agenda);
         identity.setTag("home:identity");agendaArea.setTag("home:agenda");
+        milestonePanel.setTag("home:milestones");
+        DisplayOptions sections=DisplayOptions.read(preferences);
+        agendaArea.setVisibility(sections.hideAgenda?View.GONE:View.VISIBLE);
+        milestonePanel.setVisibility(sections.hideMilestones?View.GONE:View.VISIBLE);
         if(wide&&"balanced".equals(preferences.getString("landscape_layout",SharedThemeCatalog.DEFAULT_LAYOUT))){
             LinearLayout body=row();body.setGravity(Gravity.TOP);LinearLayout side=column();side.addView(identity);side.addView(milestonePanel);side.addView(agendaArea);
             LinearLayout.LayoutParams left=new LinearLayout.LayoutParams(0,-2,1),right=new LinearLayout.LayoutParams(0,-2,1);right.leftMargin=dp(24);
@@ -665,6 +669,8 @@ public final class MainActivity extends Activity {
         CheckBox[] tileViews={settingsTile("lunar",R.string.show_lunar,R.string.lunar_short,LineIcon.MOON,draft.lunar,v->draft.lunar=v),settingsTile("terms",R.string.show_terms,R.string.terms_short,LineIcon.TERMS,draft.terms,v->draft.terms=v),settingsTile("holidays",R.string.show_holidays,R.string.holidays_short,LineIcon.FLAG,draft.holidays,v->draft.holidays=v)};
         for(int i=0;i<tileViews.length;i++){LinearLayout.LayoutParams bounds=weight();if(i>0)bounds.leftMargin=dp(8);tiles.addView(tileViews[i],bounds);}right.addView(tiles);
         right.addView(settingsToggle("hide_done",R.string.hide_completed,LineIcon.LIST,draft.hideDone,v->draft.hideDone=v));
+        right.addView(settingsToggle("hide_agenda",R.string.hide_agenda,LineIcon.LIST,draft.hideAgenda,v->draft.hideAgenda=v));
+        right.addView(settingsToggle("hide_milestones",R.string.hide_milestones,LineIcon.MILESTONE,draft.hideMilestones,v->draft.hideMilestones=v));
         right.addView(settingsToggle("desk",R.string.display_mode,LineIcon.DISPLAY,draft.desk,v->draft.desk=v));
         settingsNote(right,R.string.display_note);settingsNote(right,R.string.holiday_note);
         settingsSection(right,R.string.language,LineIcon.LANGUAGE);

@@ -378,6 +378,48 @@ def run(browser, base_url, production_url, screenshots):
     snapshot = record(page)["data"]
     snapshot["applied"]["hideDone"] = False
     snapshot["applied"]["scale"] = 100
+    visibility = json.loads(json.dumps(snapshot))
+    visibility["events"] = [{"id": 1, "date": today, "title": "Visibility event", "time": "09:30", "completed": False}]
+    visibility["milestones"] = [{"id": 1, "date": today, "title": "Visibility milestone", "kind": "anniversary", "lunar": False, "pinned": True}]
+    visibility["applied"].update(hideAgenda=False, hideMilestones=False, desk=False, view="month")
+    seed(page, visibility)
+    for key, agenda_hidden, milestones_hidden in [("hideAgenda", True, False), ("hideMilestones", True, True), ("hideAgenda", False, True), ("hideMilestones", False, False)]:
+        settings(page)
+        choose(page, f"[data-setting={key}]")
+        if screenshots and agenda_hidden and milestones_hidden:
+            page.screenshot(path=str(screenshots / "independent-visibility-settings.png"), full_page=True)
+        close_settings(page)
+        expect(page.locator(".home-agenda")).to_have_count(0 if agenda_hidden else 1)
+        expect(page.locator(".home-milestones")).to_have_count(0 if milestones_hidden else 1)
+        page.reload()
+        expect(page.locator(".home-identity")).to_be_visible()
+        saved = record(page)["data"]
+        assert saved["applied"]["hideAgenda"] == agenda_hidden and saved["applied"]["hideMilestones"] == milestones_hidden
+        assert saved["events"] == visibility["events"] and saved["milestones"] == visibility["milestones"]
+    passed("agenda and milestone switches apply independently, persist after reload and preserve data")
+    for width, height in [(390, 844), (1280, 900)]:
+        page.set_viewport_size({"width": width, "height": height})
+        for style in ["editorial", "today"]:
+            for layout in ["classic", "balanced"]:
+                for view in ["month", "week"]:
+                    visibility["applied"].update(hideAgenda=True, hideMilestones=True, desk=False, layout=layout, view=view, orientation="auto")
+                    visibility["applied"]["theme"] = {"style": style, "font": "original", "overrides": {}}
+                    seed(page, visibility)
+                    expect(page.locator(".home-agenda")).to_have_count(0)
+                    expect(page.locator(".home-milestones")).to_have_count(0)
+                    assert page.locator(".month-cell" if view == "month" else ".day-row").count() == (42 if view == "month" else 7)
+                    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
+                    if width > height and style == "today" and layout == "classic":
+                        calendar = page.locator(".calendar-panel").bounding_box()
+                        body = page.locator(".home-layout").bounding_box()
+                        assert calendar["width"] >= body["width"] - 1, "Hidden agenda left an empty grid column"
+    visibility["applied"]["desk"] = True
+    seed(page, visibility)
+    expect(page.locator(".calendar-panel")).to_be_hidden()
+    expect(page.locator(".home-agenda")).to_have_count(0)
+    expect(page.locator(".home-milestones")).to_have_count(0)
+    passed("hidden sections collapse in portrait, landscape, both layouts, month/week and desk modes")
+    seed(page, snapshot)
     # Verify month/week keep the hero in the same position for each recipe/layout.
     for width, height in [(390, 844), (1280, 900)]:
         page.set_viewport_size({"width": width, "height": height})
@@ -495,6 +537,15 @@ def run(browser, base_url, production_url, screenshots):
     expect(page.locator(".lab-bar")).to_be_visible()
     assert page.locator(".task").count() > 0
     page.locator("[data-lab-page=settings]").click()
+    page.locator("[data-setting=hideAgenda]").check()
+    page.locator("[data-setting=hideMilestones]").check()
+    page.locator("[data-action=close-settings]").click()
+    expect(page.locator(".home-agenda")).to_have_count(0)
+    expect(page.locator(".home-milestones")).to_have_count(0)
+    page.locator("[data-lab-page=settings]").click()
+    page.locator("[data-setting=hideAgenda]").uncheck()
+    expect(page.locator("[data-setting=hideMilestones]")).to_be_checked()
+    page.locator("[data-setting=hideMilestones]").uncheck()
     page.locator("[data-action=appearance]").click()
     assert page.locator("[data-font]").count() == 7
     passed("standalone file prototype runs offline with the shared UI")

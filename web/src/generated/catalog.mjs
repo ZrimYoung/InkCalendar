@@ -34,6 +34,8 @@ export default {
     "terms": true,
     "holidays": true,
     "hideDone": false,
+    "hideAgenda": false,
+    "hideMilestones": false,
     "desk": false,
     "language": "zh",
     "colorMode": "day"
@@ -354,6 +356,7 @@ export default {
     "events",
     "completion",
     "hide-completed",
+    "home-section-visibility",
     "future-7-30",
     "milestones",
     "lunar-anniversaries",

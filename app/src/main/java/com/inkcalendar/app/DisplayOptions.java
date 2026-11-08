@@ -7,7 +7,7 @@ import android.os.Bundle;
 final class DisplayOptions {
     int scale=SharedThemeCatalog.DEFAULT_SCALE;
     String view=SharedThemeCatalog.DEFAULT_VIEW,layout=SharedThemeCatalog.DEFAULT_LAYOUT,orientation=SharedThemeCatalog.DEFAULT_ORIENTATION,language=SharedThemeCatalog.DEFAULT_LANGUAGE,colorMode=SharedThemeCatalog.DEFAULT_COLOR_MODE;
-    boolean awake=SharedThemeCatalog.DEFAULT_AWAKE,full=SharedThemeCatalog.DEFAULT_FULL,lunar=SharedThemeCatalog.DEFAULT_LUNAR,terms=SharedThemeCatalog.DEFAULT_TERMS,holidays=SharedThemeCatalog.DEFAULT_HOLIDAYS,hideDone=SharedThemeCatalog.DEFAULT_HIDE_DONE,desk=SharedThemeCatalog.DEFAULT_DESK;
+    boolean awake=SharedThemeCatalog.DEFAULT_AWAKE,full=SharedThemeCatalog.DEFAULT_FULL,lunar=SharedThemeCatalog.DEFAULT_LUNAR,terms=SharedThemeCatalog.DEFAULT_TERMS,holidays=SharedThemeCatalog.DEFAULT_HOLIDAYS,hideDone=SharedThemeCatalog.DEFAULT_HIDE_DONE,hideAgenda=SharedThemeCatalog.DEFAULT_HIDE_AGENDA,hideMilestones=SharedThemeCatalog.DEFAULT_HIDE_MILESTONES,desk=SharedThemeCatalog.DEFAULT_DESK;
 
     static DisplayOptions read(SharedPreferences prefs){
         DisplayOptions o=new DisplayOptions();
@@ -20,6 +20,7 @@ final class DisplayOptions {
         o.awake=prefs.getBoolean("awake",o.awake);o.full=prefs.getBoolean("full",o.full);
         o.lunar=prefs.getBoolean("lunar",o.lunar);o.terms=prefs.getBoolean("terms",o.terms);
         o.holidays=prefs.getBoolean("holidays",o.holidays);o.hideDone=prefs.getBoolean("hide_done",o.hideDone);o.desk=prefs.getBoolean("desk",o.desk);
+        o.hideAgenda=prefs.getBoolean("hide_agenda",o.hideAgenda);o.hideMilestones=prefs.getBoolean("hide_milestones",o.hideMilestones);
         return o;
     }
     static DisplayOptions restore(SharedPreferences prefs,Bundle state){
@@ -33,6 +34,7 @@ final class DisplayOptions {
         o.awake=state.getBoolean("settings.awake",o.awake);o.full=state.getBoolean("settings.full",o.full);
         o.lunar=state.getBoolean("settings.lunar",o.lunar);o.terms=state.getBoolean("settings.terms",o.terms);
         o.holidays=state.getBoolean("settings.holidays",o.holidays);o.hideDone=state.getBoolean("settings.hide_done",o.hideDone);o.desk=state.getBoolean("settings.desk",o.desk);
+        o.hideAgenda=state.getBoolean("settings.hide_agenda",o.hideAgenda);o.hideMilestones=state.getBoolean("settings.hide_milestones",o.hideMilestones);
         return o;
     }
     void bundle(Bundle out){
@@ -41,13 +43,15 @@ final class DisplayOptions {
         out.putString("settings.color_mode",colorMode);
         out.putBoolean("settings.awake",awake);out.putBoolean("settings.full",full);out.putBoolean("settings.lunar",lunar);
         out.putBoolean("settings.terms",terms);out.putBoolean("settings.holidays",holidays);out.putBoolean("settings.hide_done",hideDone);out.putBoolean("settings.desk",desk);
+        out.putBoolean("settings.hide_agenda",hideAgenda);out.putBoolean("settings.hide_milestones",hideMilestones);
     }
     void save(SharedPreferences.Editor edit){
         edit.putInt("text_scale",clamp(scale)).putBoolean("large",scale>100)
             .putString("calendar_view",view).putString("landscape_layout",layout)
             .putString("orientation",orientation).putString("language",language).putString("color_mode",colorMode)
             .putBoolean("awake",awake).putBoolean("full",full).putBoolean("lunar",lunar)
-            .putBoolean("terms",terms).putBoolean("holidays",holidays).putBoolean("hide_done",hideDone).putBoolean("desk",desk);
+            .putBoolean("terms",terms).putBoolean("holidays",holidays).putBoolean("hide_done",hideDone).putBoolean("desk",desk)
+            .putBoolean("hide_agenda",hideAgenda).putBoolean("hide_milestones",hideMilestones);
     }
     static int clamp(int value){return Math.max(SharedThemeCatalog.SCALE_MIN,Math.min(SharedThemeCatalog.SCALE_MAX,value));}
     private static String choice(String value,String... choices){for(String c:choices)if(c.equals(value))return c;return choices[0];}

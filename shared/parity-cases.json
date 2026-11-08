@@ -1,5 +1,12 @@
 {
   "schemaVersion": 1,
+  "homeVisibility": [
+    { "input": {}, "hideAgenda": false, "hideMilestones": false },
+    { "input": { "hideAgenda": true }, "hideAgenda": true, "hideMilestones": false },
+    { "input": { "hideMilestones": true }, "hideAgenda": false, "hideMilestones": true },
+    { "input": { "hideAgenda": true, "hideMilestones": true }, "hideAgenda": true, "hideMilestones": true },
+    { "input": { "hideAgenda": false, "hideMilestones": false }, "hideAgenda": false, "hideMilestones": false }
+  ],
   "colorModes": [
     { "value": null, "expected": "day" },
     { "value": "day", "expected": "day" },

@@ -69,6 +69,40 @@ public class WeeklySettingsTest {
         assertTrue(all(dialog()).stream().noneMatch(v->"Save".contentEquals(v.getContentDescription()==null?"":v.getContentDescription())));
         closePage();recreate();assertFalse(DisplayOptions.read(prefs).awake);assertFalse(DisplayOptions.read(prefs).full);
     }
+    @Test public void homeSectionsHideIndependentlyAndRetainTheirData()throws Exception{
+        EventStore store=(EventStore)field("store");
+        store.save(new Event(0,Dates.today(),"Kept agenda","09:30"));
+        store.saveMilestone(new Milestone(0,Dates.today(),"Kept milestone",Milestone.ANNIVERSARY,false,true));render();
+        assertEquals(View.VISIBLE,main().findViewWithTag("home:agenda").getVisibility());
+        assertEquals(View.VISIBLE,main().findViewWithTag("home:milestones").getVisibility());
+        settings();((android.widget.CheckBox)dialog().findViewWithTag("setting:hide_agenda")).performClick();
+        assertTrue(prefs.getBoolean("hide_agenda",false));
+        assertEquals(View.GONE,main().findViewWithTag("home:agenda").getVisibility());
+        assertEquals(View.VISIBLE,main().findViewWithTag("home:milestones").getVisibility());
+        recreate();assertTrue(((android.widget.CheckBox)dialog().findViewWithTag("setting:hide_agenda")).isChecked());
+        ((android.widget.CheckBox)dialog().findViewWithTag("setting:hide_milestones")).performClick();
+        assertEquals(View.GONE,main().findViewWithTag("home:milestones").getVisibility());
+        ((android.widget.CheckBox)dialog().findViewWithTag("setting:hide_agenda")).performClick();
+        assertEquals(View.VISIBLE,main().findViewWithTag("home:agenda").getVisibility());
+        assertEquals(View.GONE,main().findViewWithTag("home:milestones").getVisibility());closePage();recreate();
+        store=(EventStore)field("store");assertEquals("Kept agenda",store.between(Dates.today(),Dates.today()).get(0).title);
+        assertEquals("Kept milestone",store.milestones().get(0).title);
+        prefs.edit().putBoolean("hide_agenda",true).putBoolean("hide_milestones",true).putString("theme_style","today").commit();
+        for(String qualifiers:new String[]{"w320dp-h640dp-port-mdpi","w773dp-h572dp-land-mdpi"}){
+            RuntimeEnvironment.setQualifiers(qualifiers);
+            for(String layout:new String[]{"classic","balanced"})for(String view:new String[]{"month","week"}){
+                prefs.edit().putString("landscape_layout",layout).putString("calendar_view",view).commit();recreate();
+                assertEquals(View.GONE,main().findViewWithTag("home:agenda").getVisibility());
+                assertEquals(View.GONE,main().findViewWithTag("home:milestones").getVisibility());
+                assertEquals(View.VISIBLE,main().findViewWithTag("home:identity").getVisibility());
+                assertEquals("month".equals(view)?42:7,all(main()).stream().filter(v->"month".equals(view)?v instanceof CalendarDayView:v instanceof WeekDayView).count());
+            }
+        }
+        prefs.edit().putBoolean("desk",true).commit();recreate();
+        assertEquals(View.GONE,main().findViewWithTag("home:calendar").getVisibility());
+        assertEquals(View.GONE,main().findViewWithTag("home:agenda").getVisibility());
+        assertEquals(View.GONE,main().findViewWithTag("home:milestones").getVisibility());
+    }
     @Test public void weekAndLayoutApplyWithoutSavingAndRemainAfterClose(){
         settings();((RadioButton)dialog().findViewWithTag("week")).performClick();((RadioButton)dialog().findViewWithTag("balanced")).performClick();
         recreate();assertTrue(((RadioButton)dialog().findViewWithTag("week")).isChecked());assertTrue(((RadioButton)dialog().findViewWithTag("balanced")).isChecked());

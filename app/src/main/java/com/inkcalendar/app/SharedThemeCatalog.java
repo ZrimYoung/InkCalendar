@@ -1,4 +1,4 @@
-// Generated from shared/calendar-contract.json (225320c65a0f). Do not edit.
+// Generated from shared/calendar-contract.json (d495cf67ee6b). Do not edit.
 package com.inkcalendar.app;
 
 final class SharedThemeCatalog {
@@ -47,6 +47,8 @@ final class SharedThemeCatalog {
     static final boolean DEFAULT_TERMS=true;
     static final boolean DEFAULT_HOLIDAYS=true;
     static final boolean DEFAULT_HIDE_DONE=false;
+    static final boolean DEFAULT_HIDE_AGENDA=false;
+    static final boolean DEFAULT_HIDE_MILESTONES=false;
     static final boolean DEFAULT_DESK=false;
     static final String DEFAULT_LANGUAGE="zh";
     static final String DEFAULT_COLOR_MODE="day";

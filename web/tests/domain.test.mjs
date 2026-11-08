@@ -8,6 +8,10 @@ import {calendarFitScale} from '../src/domain/layout.mjs';
 import {validateEvent,validateMilestone,validateSnapshot,emptySnapshot,normalizeSettings,normalizeTheme,resolveTheme,eventsBetween,compareMilestones,translate,plural} from '../src/domain/model.mjs';
 
 const fixtures=JSON.parse(await readFile(new URL('../../shared/parity-cases.json',import.meta.url),'utf8'));
+fixtures.homeVisibility.forEach((c,i)=>test('shared independent home visibility: '+i,()=>{
+  const result=normalizeSettings(c.input);
+  assert.equal(result.hideAgenda,c.hideAgenda);assert.equal(result.hideMilestones,c.hideMilestones);
+}));
 for(const c of fixtures.colorModes)test('shared color mode migration: '+c.value,()=>{
   assert.equal(normalizeSettings({colorMode:c.value}).colorMode,c.expected);
 });

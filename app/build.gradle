@@ -7,8 +7,8 @@ android {
         applicationId 'com.inkcalendar.app'
         minSdk 19
         targetSdk 35
-        versionCode 16
-        versionName '0.5.0-theme.8'
+        versionCode 17
+        versionName '0.5.0-theme.9'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

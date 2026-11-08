@@ -169,6 +169,7 @@
 #ink-calendar .mock[data-wide=true] .home-layout[data-flow=calendar-first] .home-side,#ink-calendar .mock[data-wide=true] .home-layout[data-layout=balanced] .home-side{display:block;grid-area:sidebar}
 #ink-calendar .mock[data-wide=true] .home-layout[data-layout=classic][data-flow=agenda-first]{grid-template-columns:minmax(0,.4fr) minmax(0,.6fr);grid-template-areas:'identity agenda' 'calendar calendar';column-gap:18px}
 #ink-calendar .mock[data-wide=true] .home-layout[data-layout=classic][data-flow=agenda-first] .home-date-column{display:block;grid-area:identity}
+#ink-calendar .mock[data-wide=true] .home-layout[data-layout=classic][data-flow=agenda-first][data-hide-agenda=true]{grid-template-columns:minmax(0,1fr);grid-template-areas:'identity' 'calendar'}
 #ink-calendar .mock[data-wide=true] .home-layout .home-identity:not([data-date=reverse]):not([data-date=center]):not([data-date=tiles]):not([data-date=masthead]) .home-hero{display:flex;flex-direction:column;align-items:flex-start;gap:0}
 #ink-calendar .mock[data-wide=true] .home-layout .home-identity:not([data-date=reverse]):not([data-date=center]):not([data-date=tiles]):not([data-date=masthead]) .home-year{order:-1}
 #ink-calendar .mock[data-wide=true] .home-layout .home-identity:not([data-date=reverse]):not([data-date=center]):not([data-date=tiles]):not([data-date=masthead]) .home-words{display:contents}
