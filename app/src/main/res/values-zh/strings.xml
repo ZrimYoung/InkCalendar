@@ -40,11 +40,10 @@
     <string name="orientation_landscape">强制横屏</string>
     <string name="orientation_portrait">强制竖屏</string>
     <string name="language">语言 / Language</string>
-    <string name="settings_note">应用打开时保持唤醒。\n事项仅保存在本机。</string>
+    <string name="settings_note">设置即时生效，数据保存在此设备。</string>
     <string name="show_lunar">农历（仅中文）</string>
     <string name="show_terms">节气（仅中文）</string>
     <string name="show_holidays">节假日与调休</string>
-    <string name="holiday_note">中国节日；已收录 2026 年官方放假和补班安排。其他年份仅显示节日名称，调休数据随版本更新。</string>
     <string name="holiday_unknown">本年调休数据未收录</string>
     <string name="hide_completed">隐藏已完成事项</string>
     <string name="hide_agenda">隐藏日程</string>

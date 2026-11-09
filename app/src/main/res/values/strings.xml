@@ -40,11 +40,10 @@
     <string name="orientation_landscape">Force landscape</string>
     <string name="orientation_portrait">Force portrait</string>
     <string name="language">Language / 语言</string>
-    <string name="settings_note">Stays awake while this app is open.\nEvents are stored on this device.</string>
+    <string name="settings_note">Changes apply automatically. Data stays on this device.</string>
     <string name="show_lunar">Lunar dates (Chinese only)</string>
     <string name="show_terms">Solar terms (Chinese only)</string>
     <string name="show_holidays">Holidays and workdays</string>
-    <string name="holiday_note">China holidays; official days off and make-up workdays are included for 2026. Other years show festival names only. Schedule updates come with app updates.</string>
     <string name="holiday_unknown">Workday schedule unavailable for this year</string>
     <string name="hide_completed">Hide completed events</string>
     <string name="hide_agenda">Hide agenda</string>

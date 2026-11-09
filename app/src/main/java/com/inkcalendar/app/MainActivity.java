@@ -672,7 +672,7 @@ public final class MainActivity extends Activity {
         right.addView(settingsToggle("hide_agenda",R.string.hide_agenda,LineIcon.LIST,draft.hideAgenda,v->draft.hideAgenda=v));
         right.addView(settingsToggle("hide_milestones",R.string.hide_milestones,LineIcon.MILESTONE,draft.hideMilestones,v->draft.hideMilestones=v));
         right.addView(settingsToggle("desk",R.string.display_mode,LineIcon.DISPLAY,draft.desk,v->draft.desk=v));
-        settingsNote(right,R.string.display_note);settingsNote(right,R.string.holiday_note);
+        settingsNote(right,R.string.display_note);
         settingsSection(right,R.string.language,LineIcon.LANGUAGE);
         right.addView(settingsSegments("language",new String[]{"zh","en"},new String[]{"简体中文","English"},draft.language,v->draft.language=v));
         settingsNote(right,R.string.settings_note);
